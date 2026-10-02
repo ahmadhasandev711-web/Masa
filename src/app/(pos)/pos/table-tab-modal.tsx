@@ -1,0 +1,560 @@
+'use client';
+
+import { useState, useTransition } from 'react';
+import {
+  X,
+  Clock,
+  Plus,
+  ArrowRightLeft,
+  Scissors,
+  CheckCircle2,
+  Banknote,
+  CreditCard,
+  ShoppingBag,
+  Printer,
+  ChefHat,
+  AlertCircle,
+} from 'lucide-react';
+import { TableStatus } from '../../../domain/tables/enums';
+import { PaymentMethod } from '../../../domain/ordering/enums';
+import { TableItemView } from '../../../application/tables/use-cases/list-tables.use-case';
+import { Money } from '../../../domain/shared/value-objects/money';
+import { SplitBillService } from '../../../domain/tables/services/split-bill.service';
+import { TableBillData } from './pos-receipt';
+
+interface TableTabModalProps {
+  table: TableItemView;
+  currency: string;
+  currencySymbol: string;
+  availableTables: TableItemView[];
+  onClose: () => void;
+  onStartAddItems: (table: TableItemView) => void;
+  onTransferTable: (fromTableId: string, toTableId: string) => Promise<boolean>;
+  onPrintBill: (tableId: string) => Promise<TableBillData | null>;
+  onPrintKitchenTicket?: (table: TableItemView) => void;
+  onCloseTab: (
+    tableId: string,
+    orderId: string,
+    paymentMethod: 'CASH' | 'CARD' | 'MIXED',
+    payments?: Array<{ method: 'CASH' | 'CARD'; amountMinor: number }>
+  ) => Promise<boolean>;
+}
+
+type ModalView = 'DETAILS' | 'TRANSFER' | 'SPLIT' | 'SETTLE';
+
+export function TableTabModal({
+  table,
+  currency,
+  currencySymbol,
+  availableTables,
+  onClose,
+  onStartAddItems,
+  onTransferTable,
+  onPrintBill,
+  onPrintKitchenTicket,
+  onCloseTab,
+}: TableTabModalProps) {
+  const [currentView, setCurrentView] = useState<ModalView>('DETAILS');
+  const [isPending, startTransition] = useTransition();
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
+
+  // Transfer State
+  const [targetTableId, setTargetTableId] = useState<string>('');
+
+  // Split State
+  const [splitCount, setSplitCount] = useState<number>(2);
+
+  // Settle State
+  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>(PaymentMethod.CASH);
+  const [tenderedInput, setTenderedInput] = useState<string>('');
+
+  const order = table.activeOrder;
+  const totalMinor = order?.totalMinor ?? 0;
+  const totalMoney = Money.fromMinor(totalMinor, currency);
+
+  // Split Calculation
+  const splitParts = SplitBillService.splitEqually(totalMoney, splitCount);
+
+  // Change Calculation
+  let tenderedMoney = totalMoney;
+  try {
+    tenderedMoney = tenderedInput ? Money.fromDecimal(tenderedInput, currency) : totalMoney;
+  } catch {
+    tenderedMoney = totalMoney;
+  }
+  const changeDue = tenderedMoney.isGreaterThan(totalMoney)
+    ? tenderedMoney.subtract(totalMoney)
+    : Money.zero(currency);
+
+  // Handle Transfer Submit
+  const handleTransferSubmit = () => {
+    if (!targetTableId) {
+      setErrorMsg('يرجى تحديد الطاولة الجديدة لنقل الطلب إليها');
+      return;
+    }
+    startTransition(async () => {
+      setErrorMsg(null);
+      const success = await onTransferTable(table.id, targetTableId);
+      if (success) {
+        onClose();
+      } else {
+        setErrorMsg('فشل نقل الطاولة، يرجى المحاولة مرة أخرى');
+      }
+    });
+  };
+
+  // Handle Print Bill
+  const handlePrintBill = () => {
+    if (!order) return;
+    startTransition(async () => {
+      setErrorMsg(null);
+      await onPrintBill(table.id);
+    });
+  };
+
+  // Handle Settle Submit
+  const handleSettleSubmit = () => {
+    if (!order) return;
+    startTransition(async () => {
+      setErrorMsg(null);
+      const settleMethod: 'CASH' | 'CARD' = paymentMethod === PaymentMethod.CARD ? 'CARD' : 'CASH';
+      const payments = [
+        {
+          method: settleMethod,
+          amountMinor: totalMinor,
+        },
+      ];
+      const success = await onCloseTab(table.id, order.id, settleMethod, payments);
+      if (success) {
+        onClose();
+      } else {
+        setErrorMsg('فشل تحصيل الطلب، تأكد من فتح الوردية وتطابق المبالغ');
+      }
+    });
+  };
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/60 backdrop-blur-xs animate-in fade-in"
+      dir="rtl"
+    >
+      <div className="w-full max-w-xl rounded-2xl bg-white p-4 sm:p-5 shadow-2xl flex flex-col max-h-[90vh] overflow-hidden animate-in zoom-in-95">
+        {/* Modal Top Header */}
+        <div className="flex items-center justify-between border-b border-zinc-100 pb-3 shrink-0">
+          <div className="flex items-center gap-2.5">
+            <div className="grid size-9 place-items-center rounded-xl bg-zinc-900 text-white font-bold">
+              {table.tableNumber}
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <h3 className="text-base font-bold text-zinc-900">
+                  جلسة طاولة {table.tableNumber}
+                </h3>
+                <span
+                  className={`rounded-md px-1.5 py-0.5 text-[10px] font-bold ${
+                    table.status === TableStatus.BILL_PRINTED
+                      ? 'bg-amber-100 text-amber-800'
+                      : 'bg-zinc-900 text-white'
+                  }`}
+                >
+                  {table.status === TableStatus.BILL_PRINTED ? 'مطبوع الشيك' : 'مشغولة'}
+                </span>
+              </div>
+              <p className="text-[11px] text-zinc-500">
+                {table.sectionNameAr || 'صالة عامة'} · {order?.guestCount || 2} ضيوف · منذ{' '}
+                {order?.minutesSeated || 0} دقيقة
+              </p>
+            </div>
+          </div>
+
+          <button
+            type="button"
+            onClick={onClose}
+            className="rounded-lg p-1 text-zinc-400 hover:bg-zinc-100 hover:text-zinc-700"
+          >
+            <X className="size-4" />
+          </button>
+        </div>
+
+        {/* Error notification */}
+        {errorMsg && (
+          <div className="mt-2 flex items-center gap-2 rounded-xl bg-rose-50 p-2.5 text-xs text-rose-700 font-medium shrink-0">
+            <AlertCircle className="size-4 shrink-0 text-rose-600" />
+            <span>{errorMsg}</span>
+          </div>
+        )}
+
+        {/* 1. Main View: Tab Order Items & Totals */}
+        {currentView === 'DETAILS' && (
+          <div className="flex-1 min-h-0 flex flex-col py-3 space-y-3 overflow-hidden">
+            {/* Order info ribbon */}
+            <div className="flex items-center justify-between rounded-xl border border-zinc-200 bg-zinc-50/70 p-2.5 text-xs shrink-0">
+              <span className="font-mono text-zinc-700 font-bold">
+                #{order?.orderNumber || 'DINE-TAB'}
+              </span>
+              <span className="flex items-center gap-1 text-zinc-500 text-[11px]">
+                <Clock className="size-3 text-zinc-400" />
+                <span>جلسة منذ {order?.minutesSeated || 0} دقيقة</span>
+              </span>
+            </div>
+
+            {/* Items List */}
+            <div className="flex-1 min-h-0 overflow-y-auto space-y-2 pr-0.5">
+              {!order || !order.items || order.items.length === 0 ? (
+                <div className="py-8 text-center text-xs text-zinc-400">
+                  <ShoppingBag className="mx-auto size-6 mb-1 text-zinc-300" />
+                  <p>لا توجد أصناف في الطلب المفتوح بعد</p>
+                </div>
+              ) : (
+                order.items.map((item) => (
+                  <div
+                    key={item.id}
+                    className="flex items-start justify-between rounded-xl border border-zinc-100 bg-white p-2.5 text-xs shadow-2xs"
+                  >
+                    <div className="space-y-0.5 min-w-0 flex-1">
+                      <div className="flex items-center gap-1.5">
+                        <span className="font-bold text-zinc-900">{item.productNameAr}</span>
+                        {item.sizeNameAr && (
+                          <span className="text-[10px] text-zinc-500">({item.sizeNameAr})</span>
+                        )}
+                      </div>
+
+                      {item.modifiers && item.modifiers.length > 0 && (
+                        <p className="text-[10px] text-zinc-500 truncate">
+                          + {item.modifiers.map((m) => m.nameAr).join('، ')}
+                        </p>
+                      )}
+                    </div>
+
+                    <div className="flex items-center gap-3 shrink-0 text-left" dir="ltr">
+                      <span className="font-mono text-zinc-500 text-xs">x{item.quantity}</span>
+                      <span className="font-bold text-zinc-900 text-xs font-mono">
+                        {(item.totalPriceMinor / 100).toFixed(2)} {currencySymbol}
+                      </span>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+
+            {/* Totals Summary */}
+            <div className="rounded-xl border border-zinc-200 bg-zinc-50/80 p-3 space-y-1.5 text-xs shrink-0">
+              <div className="flex justify-between text-zinc-600">
+                <span>المجموع الفرعي:</span>
+                <span className="font-mono">
+                  {((order?.subtotalMinor ?? 0) / 100).toFixed(2)} {currencySymbol}
+                </span>
+              </div>
+              <div className="flex justify-between text-zinc-600">
+                <span>الضريبة (14%):</span>
+                <span className="font-mono">
+                  {((order?.taxMinor ?? 0) / 100).toFixed(2)} {currencySymbol}
+                </span>
+              </div>
+              <div className="flex justify-between pt-1.5 border-t border-zinc-200 font-bold text-sm text-zinc-900">
+                <span>الإجمالي المستحق:</span>
+                <span className="font-mono text-base">
+                  {(totalMinor / 100).toFixed(2)} {currencySymbol}
+                </span>
+              </div>
+            </div>
+
+            {/* Quick Action Buttons */}
+            <div className="grid grid-cols-2 gap-2 sm:grid-cols-5 pt-1 shrink-0 text-xs">
+              <button
+                type="button"
+                onClick={() => {
+                  onStartAddItems(table);
+                  onClose();
+                }}
+                className="flex items-center justify-center gap-1.5 rounded-xl border border-zinc-200 bg-white py-2 font-semibold text-zinc-800 hover:bg-zinc-50 active:scale-95 transition"
+              >
+                <Plus className="size-3.5 text-zinc-600" />
+                <span>إضافة أصناف</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setCurrentView('TRANSFER')}
+                className="flex items-center justify-center gap-1.5 rounded-xl border border-zinc-200 bg-white py-2 font-semibold text-zinc-800 hover:bg-zinc-50 active:scale-95 transition"
+              >
+                <ArrowRightLeft className="size-3.5 text-zinc-600" />
+                <span>نقل الطاولة</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={handlePrintBill}
+                disabled={isPending}
+                className="flex items-center justify-center gap-1.5 rounded-xl border border-zinc-200 bg-white py-2 font-semibold text-zinc-800 hover:bg-zinc-50 active:scale-95 transition"
+              >
+                <Printer className="size-3.5 text-zinc-600" />
+                <span>طباعة الشيك</span>
+              </button>
+
+              {onPrintKitchenTicket && (
+                <button
+                  type="button"
+                  onClick={() => onPrintKitchenTicket(table)}
+                  disabled={isPending || !order || !order.items || order.items.length === 0}
+                  className="flex items-center justify-center gap-1.5 rounded-xl border border-zinc-200 bg-white py-2 font-semibold text-zinc-800 hover:bg-zinc-50 active:scale-95 transition"
+                  title="طباعة بون المطبخ (KOT)"
+                >
+                  <ChefHat className="size-3.5 text-zinc-600" />
+                  <span>بون المطبخ</span>
+                </button>
+              )}
+
+              <button
+                type="button"
+                onClick={() => setCurrentView('SPLIT')}
+                className="flex items-center justify-center gap-1.5 rounded-xl border border-zinc-200 bg-white py-2 font-semibold text-zinc-800 hover:bg-zinc-50 active:scale-95 transition"
+              >
+                <Scissors className="size-3.5 text-zinc-600" />
+                <span>تقسيم الشيك</span>
+              </button>
+            </div>
+
+            {/* Primary Settle Button */}
+            <div className="pt-1 shrink-0">
+              <button
+                type="button"
+                onClick={() => setCurrentView('SETTLE')}
+                className="flex w-full items-center justify-center gap-2 rounded-xl bg-zinc-900 py-3 text-sm font-bold text-white shadow-xs hover:bg-zinc-800 active:scale-95 transition"
+              >
+                <CheckCircle2 className="size-4" />
+                <span>تحصيل وإغلاق الطاولة ({(totalMinor / 100).toFixed(2)} {currencySymbol})</span>
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* 2. Sub-View: Transfer Table */}
+        {currentView === 'TRANSFER' && (
+          <div className="py-4 space-y-4 text-xs">
+            <div className="flex items-center justify-between border-b border-zinc-100 pb-2">
+              <span className="font-bold text-zinc-900 text-sm">نقل الطلب إلى طاولة أخرى</span>
+              <button
+                type="button"
+                onClick={() => setCurrentView('DETAILS')}
+                className="text-zinc-500 hover:text-zinc-800"
+              >
+                رجوع للحساب
+              </button>
+            </div>
+
+            <p className="text-zinc-600">
+              اختر الطاولة الفارغة لنقل الطلب المفتوح الحالي من طاولة{' '}
+              <strong className="text-zinc-900">{table.tableNumber}</strong>:
+            </p>
+
+            {availableTables.filter((t) => t.id !== table.id).length === 0 ? (
+              <p className="py-6 text-center text-zinc-400 border rounded-xl border-dashed">
+                لا توجد طاولات فارغة متاحة حالياً لنقل الطلب إليها.
+              </p>
+            ) : (
+              <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 max-h-56 overflow-y-auto p-1">
+                {availableTables
+                  .filter((t) => t.id !== table.id)
+                  .map((t) => (
+                    <button
+                      key={t.id}
+                      type="button"
+                      onClick={() => setTargetTableId(t.id)}
+                      className={`flex flex-col justify-between rounded-xl border p-2.5 text-right transition ${
+                        targetTableId === t.id
+                          ? 'border-zinc-900 bg-zinc-900 text-white'
+                          : 'border-zinc-200 bg-zinc-50 hover:bg-zinc-100 text-zinc-800'
+                      }`}
+                    >
+                      <span className="font-bold text-sm">طاولة {t.tableNumber}</span>
+                      <span className="text-[10px] opacity-75">{t.sectionNameAr || 'صالة'}</span>
+                    </button>
+                  ))}
+              </div>
+            )}
+
+            <div className="flex items-center justify-end gap-2 pt-3 border-t border-zinc-100">
+              <button
+                type="button"
+                onClick={() => setCurrentView('DETAILS')}
+                className="rounded-xl border border-zinc-200 px-4 py-2 font-medium text-zinc-600"
+              >
+                إلغاء
+              </button>
+              <button
+                type="button"
+                onClick={handleTransferSubmit}
+                disabled={!targetTableId || isPending}
+                className="rounded-xl bg-zinc-900 px-4 py-2 font-semibold text-white disabled:opacity-50"
+              >
+                {isPending ? 'جاري النقل...' : 'تأكيد نقل الطلب'}
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* 3. Sub-View: Split Bill */}
+        {currentView === 'SPLIT' && (
+          <div className="py-4 space-y-4 text-xs">
+            <div className="flex items-center justify-between border-b border-zinc-100 pb-2">
+              <span className="font-bold text-zinc-900 text-sm">تقسيم الشيك بالتساوي</span>
+              <button
+                type="button"
+                onClick={() => setCurrentView('DETAILS')}
+                className="text-zinc-500 hover:text-zinc-800"
+              >
+                رجوع للحساب
+              </button>
+            </div>
+
+            <div className="flex items-center justify-between bg-zinc-50 p-3 rounded-xl border border-zinc-200">
+              <span className="font-semibold text-zinc-700">عدد الأفراد للتقسيم:</span>
+              <div className="flex items-center gap-1.5">
+                {[2, 3, 4, 5, 6].map((count) => (
+                  <button
+                    key={count}
+                    type="button"
+                    onClick={() => setSplitCount(count)}
+                    className={`size-8 rounded-lg font-bold transition ${
+                      splitCount === count
+                        ? 'bg-zinc-900 text-white'
+                        : 'bg-white border border-zinc-200 text-zinc-700 hover:bg-zinc-100'
+                    }`}
+                  >
+                    {count}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="space-y-2 max-h-52 overflow-y-auto">
+              {splitParts.map((part, index) => (
+                <div
+                  key={index}
+                  className="flex items-center justify-between rounded-xl border border-zinc-100 bg-white p-2.5 text-xs shadow-2xs"
+                >
+                  <span className="font-medium text-zinc-700">الضيف رقم {index + 1}:</span>
+                  <span className="font-bold font-mono text-zinc-900 text-sm">
+                    {(part.amount / 100).toFixed(2)} {currencySymbol}
+                  </span>
+                </div>
+              ))}
+            </div>
+
+            <div className="pt-2 border-t border-zinc-100 flex items-center justify-between text-xs text-zinc-500">
+              <span>الإجمالي: {(totalMinor / 100).toFixed(2)} {currencySymbol}</span>
+              <button
+                type="button"
+                onClick={() => setCurrentView('SETTLE')}
+                className="rounded-xl bg-zinc-900 px-4 py-2 font-semibold text-white"
+              >
+                المتابعة للدفع
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* 4. Sub-View: Settle (Pay & Close) */}
+        {currentView === 'SETTLE' && (
+          <div className="py-4 space-y-4 text-xs">
+            <div className="flex items-center justify-between border-b border-zinc-100 pb-2">
+              <span className="font-bold text-zinc-900 text-sm">تحصيل الحساب وإغلاق الطاولة</span>
+              <button
+                type="button"
+                onClick={() => setCurrentView('DETAILS')}
+                className="text-zinc-500 hover:text-zinc-800"
+              >
+                رجوع
+              </button>
+            </div>
+
+            {/* Total due display */}
+            <div className="text-center rounded-2xl bg-zinc-900 p-4 text-white">
+              <p className="text-[11px] text-zinc-400">إجمالي المبلغ المطلوب تحصيله</p>
+              <h2 className="mt-1 text-2xl font-black font-mono">
+                {(totalMinor / 100).toFixed(2)} {currencySymbol}
+              </h2>
+            </div>
+
+            {/* Payment Method Selector */}
+            <div className="space-y-1.5">
+              <label className="block font-semibold text-zinc-700">طريقة الدفع:</label>
+              <div className="grid grid-cols-2 gap-2">
+                <button
+                  type="button"
+                  onClick={() => setPaymentMethod(PaymentMethod.CASH)}
+                  className={`flex items-center justify-center gap-1.5 rounded-xl border py-2.5 font-bold transition ${
+                    paymentMethod === PaymentMethod.CASH
+                      ? 'border-zinc-900 bg-zinc-900 text-white'
+                      : 'border-zinc-200 bg-white text-zinc-700 hover:bg-zinc-50'
+                  }`}
+                >
+                  <Banknote className="size-4" />
+                  <span>نقدي (Cash)</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setPaymentMethod(PaymentMethod.CARD)}
+                  className={`flex items-center justify-center gap-1.5 rounded-xl border py-2.5 font-bold transition ${
+                    paymentMethod === PaymentMethod.CARD
+                      ? 'border-zinc-900 bg-zinc-900 text-white'
+                      : 'border-zinc-200 bg-white text-zinc-700 hover:bg-zinc-50'
+                  }`}
+                >
+                  <CreditCard className="size-4" />
+                  <span>بطاقة (Card / POS)</span>
+                </button>
+              </div>
+            </div>
+
+            {/* Cash Tender & Change (if cash) */}
+            {paymentMethod === PaymentMethod.CASH && (
+              <div className="space-y-2 rounded-xl border border-zinc-200 bg-zinc-50/70 p-3">
+                <div className="flex items-center justify-between">
+                  <span className="font-semibold text-zinc-700">المبلغ المستلم:</span>
+                  <input
+                    type="number"
+                    step="0.5"
+                    placeholder={(totalMinor / 100).toFixed(2)}
+                    value={tenderedInput}
+                    onChange={(e) => setTenderedInput(e.target.value)}
+                    className="w-32 rounded-lg border border-zinc-200 bg-white px-2.5 py-1 text-left font-mono font-bold text-zinc-900 focus:outline-none focus:ring-2 focus:ring-zinc-900"
+                    dir="ltr"
+                  />
+                </div>
+
+                <div className="flex items-center justify-between pt-1 border-t border-zinc-200/60 font-semibold text-emerald-800">
+                  <span>الباقي للعميل:</span>
+                  <span className="font-mono font-bold">
+                    {(changeDue.amount / 100).toFixed(2)} {currencySymbol}
+                  </span>
+                </div>
+              </div>
+            )}
+
+            {/* Confirm Settle */}
+            <div className="flex items-center justify-end gap-2 pt-3 border-t border-zinc-100">
+              <button
+                type="button"
+                onClick={() => setCurrentView('DETAILS')}
+                className="rounded-xl border border-zinc-200 px-4 py-2 font-medium text-zinc-600"
+              >
+                إلغاء
+              </button>
+              <button
+                type="button"
+                onClick={handleSettleSubmit}
+                disabled={isPending}
+                className="rounded-xl bg-emerald-600 px-5 py-2.5 font-bold text-white shadow-xs hover:bg-emerald-700 disabled:opacity-50"
+              >
+                {isPending ? 'جاري إتمام التحصيل...' : 'تأكيد استلام المبلغ وإغلاق الطاولة'}
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}

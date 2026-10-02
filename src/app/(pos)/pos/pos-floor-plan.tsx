@@ -1,0 +1,397 @@
+'use client';
+
+import { useState, useMemo } from 'react';
+import {
+  Armchair,
+  Search,
+  Users,
+  Clock,
+  RefreshCw,
+  Plus,
+  Square,
+  Circle,
+  RectangleHorizontal,
+  X,
+} from 'lucide-react';
+import { TableStatus, TableShape } from '../../../domain/tables/enums';
+import { TableItemView } from '../../../application/tables/use-cases/list-tables.use-case';
+import { PosSection } from './pos.types';
+
+interface PosFloorPlanProps {
+  tables: TableItemView[];
+  sections: PosSection[];
+  currencySymbol: string;
+  isRefreshing: boolean;
+  onRefresh: () => void;
+  onSelectAvailableTable: (table: TableItemView, guestCount: number) => void;
+  onSelectOccupiedTable: (table: TableItemView) => void;
+  onSwitchToCatalog: () => void;
+}
+
+export function PosFloorPlan({
+  tables,
+  sections,
+  currencySymbol,
+  isRefreshing,
+  onRefresh,
+  onSelectAvailableTable,
+  onSelectOccupiedTable,
+  onSwitchToCatalog,
+}: PosFloorPlanProps) {
+  const [selectedSectionId, setSelectedSectionId] = useState<string>('ALL');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [statusFilter, setStatusFilter] = useState<string>('ALL');
+
+  // Open Table Modal State
+  const [openModalTable, setOpenModalTable] = useState<TableItemView | null>(null);
+  const [guestCount, setGuestCount] = useState<number>(2);
+
+  // Stats
+  const stats = useMemo(() => {
+    const total = tables.length;
+    const available = tables.filter((t) => t.status === TableStatus.AVAILABLE).length;
+    const occupied = tables.filter((t) => t.status === TableStatus.OCCUPIED).length;
+    const billPrinted = tables.filter((t) => t.status === TableStatus.BILL_PRINTED).length;
+    return { total, available, occupied, billPrinted };
+  }, [tables]);
+
+  // Filtered Tables
+  const filteredTables = useMemo(() => {
+    return tables.filter((table) => {
+      if (selectedSectionId !== 'ALL') {
+        if (selectedSectionId === 'NONE' && table.sectionId !== null) return false;
+        if (selectedSectionId !== 'NONE' && table.sectionId !== selectedSectionId) return false;
+      }
+      if (statusFilter !== 'ALL' && table.status !== statusFilter) {
+        return false;
+      }
+      if (searchQuery.trim()) {
+        const query = searchQuery.trim().toLowerCase();
+        const matchesNumber = table.tableNumber.toLowerCase().includes(query);
+        const matchesSection = table.sectionNameAr?.toLowerCase().includes(query);
+        if (!matchesNumber && !matchesSection) return false;
+      }
+      return true;
+    });
+  }, [tables, selectedSectionId, statusFilter, searchQuery]);
+
+  const getShapeIcon = (shape: string) => {
+    switch (shape) {
+      case TableShape.ROUND:
+        return <Circle className="size-3 text-zinc-400" strokeWidth={1.8} />;
+      case TableShape.RECTANGLE:
+        return <RectangleHorizontal className="size-3 text-zinc-400" strokeWidth={1.8} />;
+      case TableShape.SQUARE:
+      default:
+        return <Square className="size-3 text-zinc-400" strokeWidth={1.8} />;
+    }
+  };
+
+  const handleStartOpenTable = (table: TableItemView) => {
+    setOpenModalTable(table);
+    setGuestCount(Math.min(table.capacity, 2) || 2);
+  };
+
+  const handleConfirmOpenTable = () => {
+    if (!openModalTable) return;
+    onSelectAvailableTable(openModalTable, guestCount);
+    setOpenModalTable(null);
+  };
+
+  return (
+    <div className="flex-1 flex flex-col min-h-0 bg-zinc-50 overflow-hidden" dir="rtl">
+      {/* 1. Floor Plan Control Bar */}
+      <div className="shrink-0 border-b border-zinc-200 bg-white p-3 sm:px-6 sm:py-3 shadow-2xs space-y-2.5">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2.5">
+          {/* Section Pills */}
+          <div className="flex items-center gap-1.5 overflow-x-auto pb-1 text-xs">
+            <button
+              type="button"
+              onClick={() => setSelectedSectionId('ALL')}
+              className={`shrink-0 rounded-xl px-3 py-1.5 font-bold transition ${
+                selectedSectionId === 'ALL'
+                  ? 'bg-zinc-900 text-white shadow-2xs'
+                  : 'bg-zinc-100 text-zinc-600 hover:bg-zinc-200/70'
+              }`}
+            >
+              كافة الصالة ({tables.length})
+            </button>
+            {sections.map((sec) => {
+              const count = tables.filter((t) => t.sectionId === sec.id).length;
+              return (
+                <button
+                  key={sec.id}
+                  type="button"
+                  onClick={() => setSelectedSectionId(sec.id)}
+                  className={`shrink-0 rounded-xl px-3 py-1.5 font-bold transition ${
+                    selectedSectionId === sec.id
+                      ? 'bg-zinc-900 text-white shadow-2xs'
+                      : 'bg-zinc-100 text-zinc-600 hover:bg-zinc-200/70'
+                  }`}
+                >
+                  {sec.nameAr} ({count})
+                </button>
+              );
+            })}
+          </div>
+
+          {/* Quick KPI badges */}
+          <div className="flex items-center gap-2 text-xs shrink-0">
+            <span className="flex items-center gap-1.5 rounded-lg border border-emerald-200 bg-emerald-50 px-2 py-1 font-bold text-emerald-800">
+              <span className="size-2 rounded-full bg-emerald-500" />
+              <span>متاحة: {stats.available}</span>
+            </span>
+
+            <span className="flex items-center gap-1.5 rounded-lg border border-zinc-300 bg-zinc-900 px-2 py-1 font-bold text-white">
+              <span className="size-2 rounded-full bg-rose-400" />
+              <span>مشغولة: {stats.occupied}</span>
+            </span>
+
+            {stats.billPrinted > 0 && (
+              <span className="flex items-center gap-1.5 rounded-lg border border-amber-200 bg-amber-50 px-2 py-1 font-bold text-amber-800">
+                <span className="size-2 rounded-full bg-amber-500" />
+                <span>مطبوع: {stats.billPrinted}</span>
+              </span>
+            )}
+
+            <button
+              type="button"
+              onClick={onRefresh}
+              disabled={isRefreshing}
+              title="تحديث حالات الصالة"
+              aria-label="تحديث حالات الصالة"
+              className="grid size-8 place-items-center rounded-lg border border-zinc-200 text-zinc-600 hover:bg-zinc-100 disabled:opacity-50"
+            >
+              <RefreshCw className={`size-3.5 ${isRefreshing ? 'animate-spin' : ''}`} />
+            </button>
+          </div>
+        </div>
+
+        {/* Search & Filter */}
+        <div className="flex items-center gap-2 pt-1 border-t border-zinc-100 text-xs">
+          <div className="relative flex-1 max-w-xs">
+            <Search className="pointer-events-none absolute right-2.5 top-1/2 size-3.5 -translate-y-1/2 text-zinc-400" />
+            <input
+              type="text"
+              placeholder="بحث برقم الطاولة..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full rounded-lg border border-zinc-200 bg-zinc-50/70 py-1 pr-8 pl-3 text-xs text-zinc-900 placeholder-zinc-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-zinc-900"
+            />
+          </div>
+
+          <select
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value)}
+            className="h-7 rounded-lg border border-zinc-200 bg-white px-2 py-0.5 text-xs text-zinc-700"
+          >
+            <option value="ALL">جميع الحالات</option>
+            <option value={TableStatus.AVAILABLE}>المتاحة</option>
+            <option value={TableStatus.OCCUPIED}>المشغولة</option>
+            <option value={TableStatus.BILL_PRINTED}>مطبوع الشيك</option>
+          </select>
+
+          <button
+            type="button"
+            onClick={onSwitchToCatalog}
+            className="mr-auto rounded-lg bg-zinc-100 hover:bg-zinc-200 px-3 py-1 font-semibold text-zinc-800 text-xs"
+          >
+            الذهاب للطلب السريع / المنيو
+          </button>
+        </div>
+      </div>
+
+      {/* 2. Floor Tables Grid */}
+      <div className="flex-1 min-h-0 overflow-y-auto p-3 sm:p-6">
+        {filteredTables.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-16 text-center">
+            <div className="grid size-12 place-items-center rounded-2xl bg-zinc-100 text-zinc-400">
+              <Armchair className="size-6" strokeWidth={1.5} />
+            </div>
+            <p className="mt-3 text-sm font-bold text-zinc-700">لا توجد طاولات مطابقة</p>
+            <p className="text-xs text-zinc-400 mt-1">تأكد من اختيار القسم الصحيح أو إلغاء فلتر البحث.</p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
+            {filteredTables.map((table) => {
+              const isAvailable = table.status === TableStatus.AVAILABLE;
+              const isOccupied = table.status === TableStatus.OCCUPIED;
+              const isBillPrinted = table.status === TableStatus.BILL_PRINTED;
+
+              return (
+                <div
+                  key={table.id}
+                  onClick={() => {
+                    if (isAvailable) {
+                      handleStartOpenTable(table);
+                    } else if (isOccupied || isBillPrinted) {
+                      onSelectOccupiedTable(table);
+                    }
+                  }}
+                  className={`group relative flex flex-col justify-between rounded-2xl border p-3.5 text-right transition cursor-pointer select-none active:scale-[0.98] ${
+                    isAvailable
+                      ? 'border-emerald-200/90 bg-emerald-50/50 hover:bg-emerald-50 hover:border-emerald-300 shadow-2xs'
+                      : isBillPrinted
+                      ? 'border-amber-200/90 bg-amber-50/70 hover:bg-amber-50 shadow-2xs'
+                      : 'border-zinc-300 bg-white hover:border-zinc-400 shadow-2xs'
+                  }`}
+                >
+                  <div>
+                    {/* Top row: Table number & status */}
+                    <div className="flex items-start justify-between gap-1">
+                      <div className="flex items-center gap-1.5">
+                        <div
+                          className={`grid size-9 place-items-center rounded-xl font-bold text-sm ${
+                            isAvailable
+                              ? 'bg-emerald-600 text-white'
+                              : isBillPrinted
+                              ? 'bg-amber-600 text-white'
+                              : 'bg-zinc-900 text-white'
+                          }`}
+                        >
+                          {table.tableNumber}
+                        </div>
+                        <div>
+                          <div className="flex items-center gap-1">
+                            <span className="font-bold text-xs text-zinc-900">
+                              طاولة {table.tableNumber}
+                            </span>
+                            {getShapeIcon(table.shape)}
+                          </div>
+                          <p className="text-[10px] text-zinc-500 truncate max-w-[80px]">
+                            {table.sectionNameAr || 'عامة'}
+                          </p>
+                        </div>
+                      </div>
+
+                      <span
+                        className={`rounded-md px-1.5 py-0.5 text-[9px] font-bold ${
+                          isAvailable
+                            ? 'bg-emerald-100 text-emerald-800'
+                            : isBillPrinted
+                            ? 'bg-amber-100 text-amber-800'
+                            : 'bg-zinc-900 text-white'
+                        }`}
+                      >
+                        {isAvailable ? 'متاحة' : isBillPrinted ? 'مطبوع الشيك' : 'مشغولة'}
+                      </span>
+                    </div>
+
+                    {/* Capacity */}
+                    <div className="mt-2.5 flex items-center justify-between text-[11px] text-zinc-600">
+                      <span className="flex items-center gap-1">
+                        <Users className="size-3 text-zinc-400" />
+                        <span>{table.capacity} مقاعد</span>
+                      </span>
+                      {isAvailable && (
+                        <span className="text-[10px] font-bold text-emerald-700">اضغط للفتح</span>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Active tab summary (if occupied) */}
+                  {(isOccupied || isBillPrinted) && table.activeOrder && (
+                    <div className="mt-3 rounded-xl border border-zinc-200/80 bg-zinc-50/80 p-2 text-xs space-y-1">
+                      <div className="flex items-center justify-between text-[11px] text-zinc-600">
+                        <span className="flex items-center gap-1">
+                          <Clock className="size-3 text-zinc-400" />
+                          <span>{table.activeOrder.minutesSeated} د</span>
+                        </span>
+                        <span>{table.activeOrder.itemsCount} صنف</span>
+                      </div>
+
+                      <div className="flex items-center justify-between pt-1 border-t border-zinc-200/60 font-bold text-zinc-900 text-[11px]">
+                        <span>المستحق:</span>
+                        <span className="font-mono">
+                          {(table.activeOrder.totalMinor / 100).toFixed(2)} {currencySymbol}
+                        </span>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+
+      {/* 3. Modal: Quick Open Table */}
+      {openModalTable && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in"
+          dir="rtl"
+        >
+          <div className="w-full max-w-sm rounded-2xl bg-white p-5 shadow-2xl animate-in zoom-in-95">
+            <div className="flex items-center justify-between border-b border-zinc-100 pb-3">
+              <div className="flex items-center gap-2">
+                <div className="grid size-8 place-items-center rounded-xl bg-emerald-600 text-white font-bold text-xs">
+                  {openModalTable.tableNumber}
+                </div>
+                <div>
+                  <h3 className="text-sm font-bold text-zinc-900">
+                    فتح طاولة {openModalTable.tableNumber}
+                  </h3>
+                  <p className="text-[11px] text-zinc-500">
+                    {openModalTable.sectionNameAr || 'صالة عامة'} · السعة {openModalTable.capacity} أفراد
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setOpenModalTable(null)}
+                className="rounded-lg p-1 text-zinc-400 hover:bg-zinc-100"
+              >
+                <X className="size-4" />
+              </button>
+            </div>
+
+            <div className="py-4 space-y-3 text-xs">
+              <div>
+                <label className="block font-semibold text-zinc-700 mb-1">عدد الضيوف (الرواد):</label>
+                <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 rounded-xl border border-zinc-200 bg-zinc-50 p-1 flex-1">
+                    <button
+                      type="button"
+                      onClick={() => setGuestCount((c) => Math.max(1, c - 1))}
+                      className="size-8 rounded-lg bg-white border border-zinc-200 font-bold text-zinc-700 hover:bg-zinc-100"
+                    >
+                      -
+                    </button>
+                    <span className="flex-1 text-center font-bold text-sm text-zinc-900">
+                      {guestCount} ضيوف
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => setGuestCount((c) => Math.min(20, c + 1))}
+                      className="size-8 rounded-lg bg-white border border-zinc-200 font-bold text-zinc-700 hover:bg-zinc-100"
+                    >
+                      +
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex items-center justify-end gap-2 pt-3 border-t border-zinc-100 text-xs">
+              <button
+                type="button"
+                onClick={() => setOpenModalTable(null)}
+                className="rounded-xl border border-zinc-200 px-4 py-2 font-medium text-zinc-600"
+              >
+                إلغاء
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirmOpenTable}
+                className="flex items-center gap-1.5 rounded-xl bg-zinc-900 px-4 py-2 font-bold text-white shadow-xs hover:bg-zinc-800"
+              >
+                <Plus className="size-3.5" />
+                <span>فتح الطاولة واختيار الأصناف</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}

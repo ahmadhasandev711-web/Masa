@@ -1,0 +1,975 @@
+'use client';
+
+import Link from 'next/link';
+import { useState, useEffect } from 'react';
+import {
+  ArrowRight,
+  History,
+  Printer,
+  Store,
+  ShoppingCart,
+  ChevronLeft,
+  X,
+  Armchair,
+  Plus,
+  ChefHat,
+  CheckCircle2,
+} from 'lucide-react';
+import { PosReceipt } from '../../../domain/pos/contracts/pos.repository';
+import { Money } from '../../../domain/shared/value-objects/money';
+import { TableStatus } from '../../../domain/tables/enums';
+import { OrderType, OrderStatus } from '../../../domain/ordering/enums';
+import { listOrdersAction } from '../../actions/order.actions';
+import { PosCatalog } from './pos-catalog';
+import { ProductPicker } from './product-picker';
+import { CartLines, CartTypeSelector, CartOptions, CartTotals } from './pos-cart';
+import { PaymentModal } from './payment-modal';
+import { ShiftPanel } from './shift-panel';
+import { PosReceiptPrint, TableBillPrint, TableBillData } from './pos-receipt';
+import { KitchenOrderTicketPrint, KitchenTicketData } from '../../../components/printing/kitchen-order-ticket';
+import { TableItemView } from '../../../application/tables/use-cases/list-tables.use-case';
+import { PosFloorPlan } from './pos-floor-plan';
+import { TablePickerModal } from './table-picker-modal';
+import { TableTabModal } from './table-tab-modal';
+import { PosModal, posButton, posPrimary } from './pos-ui';
+import { PosClientProps } from './pos.types';
+import { PosWorkspace, usePosWorkspace } from './use-pos-workspace';
+
+export interface ReadyOrderSummary {
+  id: string;
+  orderNumber: string;
+  type: string;
+  tableName?: string | null;
+  itemsSummary?: string;
+}
+
+function ReadyOrdersModal({
+  orders,
+  onClose,
+}: {
+  orders: ReadyOrderSummary[];
+  onClose: () => void;
+}) {
+  return (
+    <PosModal title="طلبات تم تجهيزها في المطبخ (جاهزة للاستلام والتقديم)" onClose={onClose}>
+      {!orders.length ? (
+        <p className="text-sm text-zinc-500 py-4 text-center">لا توجد طلبات جاهزة حالياً بالمطبخ.</p>
+      ) : (
+        <div className="space-y-2.5 max-h-[60vh] overflow-y-auto">
+          {orders.map((order) => (
+            <div
+              key={order.id}
+              className="flex items-center justify-between p-3 rounded-xl border border-emerald-200 bg-emerald-50/60"
+            >
+              <div>
+                <div className="flex items-center gap-2">
+                  <span className="font-mono font-bold text-xs text-zinc-900" dir="ltr">
+                    {order.orderNumber}
+                  </span>
+                  <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-600 text-white">
+                    {order.type === 'DINE_IN'
+                      ? `صالة (طاولة ${order.tableName || 'غير محددة'})`
+                      : order.type === 'TAKEAWAY'
+                      ? 'سفري'
+                      : 'توصيل'}
+                  </span>
+                </div>
+                {order.itemsSummary && (
+                  <p className="text-xs text-zinc-600 mt-1 max-w-[280px] truncate">
+                    {order.itemsSummary}
+                  </p>
+                )}
+              </div>
+              <div className="flex items-center gap-1.5 text-xs font-bold text-emerald-700 bg-emerald-100/70 px-2.5 py-1 rounded-lg">
+                <CheckCircle2 size={14} />
+                <span>جاهز للتسليم</span>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </PosModal>
+  );
+}
+
+function RecentReceipts({
+  receipts,
+  onPrint,
+  onPrintKot,
+  onClose,
+}: {
+  receipts: PosReceipt[];
+  onPrint: (receipt: PosReceipt) => void;
+  onPrintKot?: (receipt: PosReceipt) => void;
+  onClose: () => void;
+}) {
+  return (
+    <PosModal title="آخر فواتير الكاشير في الفرع" onClose={onClose}>
+      {!receipts.length && <p className="text-sm text-zinc-500">لا توجد مبيعات بعد.</p>}
+      {receipts.map((receipt) => (
+        <div
+          key={receipt.id}
+          className="mb-3 flex items-center justify-between gap-2 rounded-xl border border-zinc-200 p-3"
+        >
+          <div>
+            <p className="break-all text-xs" dir="ltr">
+              {receipt.orderNumber}
+            </p>
+            <p className="mt-1 text-sm font-bold">
+              {Money.fromMinor(receipt.totalMinor, receipt.currency).format(receipt.locale)}
+            </p>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <button
+              onClick={() => onPrint(receipt)}
+              className={posButton}
+              title={'طباعة الفاتورة ' + receipt.orderNumber}
+            >
+              <Printer size={16} />
+            </button>
+            {onPrintKot && (
+              <button
+                onClick={() => onPrintKot(receipt)}
+                className={posButton}
+                title={'طباعة بون المطبخ ' + receipt.orderNumber}
+              >
+                <ChefHat size={16} />
+              </button>
+            )}
+          </div>
+        </div>
+      ))}
+    </PosModal>
+  );
+}
+
+function PostSaleModal({
+  receipt,
+  currency,
+  autoPrintKot,
+  onToggleAutoPrintKot,
+  onPrintReceipt,
+  onPrintKot,
+  onPrintBoth,
+  onClose,
+}: {
+  receipt: PosReceipt;
+  currency: string;
+  autoPrintKot: boolean;
+  onToggleAutoPrintKot: (val: boolean) => void;
+  onPrintReceipt: (receipt: PosReceipt) => void;
+  onPrintKot: (receipt: PosReceipt) => void;
+  onPrintBoth: (receipt: PosReceipt) => void;
+  onClose: () => void;
+}) {
+  return (
+    <PosModal title="تم تسجيل العملية بنجاح" onClose={onClose}>
+      <div className="space-y-4 py-2">
+        {/* Order Success Banner */}
+        <div className="flex items-center gap-3 p-3.5 rounded-2xl bg-emerald-50 border border-emerald-200">
+          <div className="w-10 h-10 rounded-xl bg-emerald-600 text-white flex items-center justify-center shrink-0 shadow-xs">
+            <CheckCircle2 className="w-5 h-5" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2">
+              <span className="font-mono font-bold text-sm text-zinc-900" dir="ltr">
+                #{receipt.orderNumber}
+              </span>
+              <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-zinc-900 text-white">
+                {receipt.type === OrderType.DINE_IN ? 'صالة' : 'سفري'}
+              </span>
+            </div>
+            <p className="text-xs text-zinc-600 font-bold mt-0.5">
+              الإجمالي:{' '}
+              {Money.fromMinor(receipt.totalMinor, currency).format(receipt.locale)}
+            </p>
+          </div>
+        </div>
+
+        {/* Action Buttons */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+          <button
+            type="button"
+            onClick={() => onPrintReceipt(receipt)}
+            className="flex items-center justify-center gap-2 p-3 rounded-xl border border-zinc-300 bg-white hover:bg-zinc-50 text-zinc-800 text-xs font-bold transition shadow-2xs"
+          >
+            <Printer className="w-4 h-4 text-zinc-600" />
+            <span>طباعة فاتورة العميل</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => onPrintKot(receipt)}
+            className="flex items-center justify-center gap-2 p-3 rounded-xl border border-amber-300 bg-amber-50 hover:bg-amber-100/80 text-amber-900 text-xs font-bold transition shadow-2xs"
+          >
+            <ChefHat className="w-4 h-4 text-amber-700" />
+            <span>طباعة بون المطبخ (KOT)</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => onPrintBoth(receipt)}
+            className="sm:col-span-2 flex items-center justify-center gap-2 p-3 rounded-xl bg-zinc-900 hover:bg-zinc-800 text-white text-xs font-bold transition shadow-xs"
+          >
+            <Printer className="w-4 h-4" />
+            <span>طباعة الفاتورة وبون المطبخ معاً</span>
+          </button>
+        </div>
+
+        {/* Auto-print KOT toggle */}
+        <div className="flex items-center justify-between p-3 rounded-xl bg-zinc-50 border border-zinc-200 text-xs">
+          <label htmlFor="auto-print-kot-toggle" className="cursor-pointer font-medium text-zinc-700 select-none">
+            طباعة بون المطبخ تلقائياً مع الفاتورة عند كل بيع
+          </label>
+          <input
+            id="auto-print-kot-toggle"
+            type="checkbox"
+            checked={autoPrintKot}
+            onChange={(e) => onToggleAutoPrintKot(e.target.checked)}
+            className="size-4 rounded border-zinc-300 text-zinc-900 focus:ring-zinc-500 cursor-pointer"
+          />
+        </div>
+
+        {/* Dismiss / New Order */}
+        <button
+          type="button"
+          onClick={onClose}
+          className="w-full py-2.5 rounded-xl border border-zinc-200 text-zinc-600 hover:bg-zinc-100 text-xs font-semibold transition"
+        >
+          طلب جديد (متابعة)
+        </button>
+      </div>
+    </PosModal>
+  );
+}
+
+function PosHeader({
+  state,
+  cartItemCount,
+  readyOrdersCount = 0,
+  onOpenMobileCart,
+  onOpenReadyOrders,
+}: {
+  state: PosWorkspace;
+  cartItemCount: number;
+  readyOrdersCount?: number;
+  onOpenMobileCart: () => void;
+  onOpenReadyOrders?: () => void;
+}) {
+  const occupiedTablesCount = state.tables.filter(
+    (t) => t.status === TableStatus.OCCUPIED || t.status === TableStatus.BILL_PRINTED
+  ).length;
+
+  return (
+    <header className="shrink-0 flex items-center justify-between gap-2 border-b border-zinc-200 bg-white px-3 py-2 sm:px-6 sm:py-2.5 shadow-2xs">
+      <div className="flex items-center gap-2.5 min-w-0">
+        <span className="grid size-9 sm:size-10 place-items-center rounded-xl bg-zinc-900 text-white shadow-xs shrink-0">
+          <Store size={18} strokeWidth={1.75} />
+        </span>
+        <div className="truncate">
+          <h1 className="text-xs sm:text-sm font-bold text-zinc-900 truncate">
+            {state.settings.nameAr} — نقطة البيع
+          </h1>
+          <p className="text-[10px] sm:text-xs text-zinc-500 truncate">
+            {state.branch.nameAr} · {state.shift ? 'وردية مفتوحة' : 'الوردية مغلقة'}
+          </p>
+        </div>
+      </div>
+
+      <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
+        {/* Ready Orders From Kitchen Badge */}
+        {readyOrdersCount > 0 && onOpenReadyOrders && (
+          <button
+            type="button"
+            onClick={onOpenReadyOrders}
+            className="flex items-center gap-1.5 px-2 sm:px-2.5 py-1.5 rounded-xl text-xs font-bold bg-emerald-50 text-emerald-800 border border-emerald-300 animate-pulse hover:bg-emerald-100 transition shadow-2xs"
+            title="طلبات جهزت في المطبخ بانتظار الاستلام أو التقديم"
+          >
+            <ChefHat size={14} className="text-emerald-700" />
+            <span className="hidden sm:inline">جاهز بالمطبخ</span>
+            <span className="px-1.5 py-0.2 rounded-full bg-emerald-600 text-white text-[10px]">
+              {readyOrdersCount}
+            </span>
+          </button>
+        )}
+        {/* Floor Plan / Dining Hall Switch Button */}
+        {state.shift && (
+          <button
+            type="button"
+            onClick={() =>
+              state.setViewMode(state.viewMode === 'FLOOR_PLAN' ? 'SALE' : 'FLOOR_PLAN')
+            }
+            className={`${posButton} px-2 sm:px-3 text-xs flex items-center gap-1.5 ${
+              state.viewMode === 'FLOOR_PLAN'
+                ? 'bg-zinc-900 text-white hover:bg-zinc-800'
+                : 'text-zinc-700 hover:bg-zinc-100'
+            }`}
+          >
+            <Armchair size={15} strokeWidth={1.8} />
+            <span className="hidden sm:inline">
+              {state.viewMode === 'FLOOR_PLAN' ? 'الطلب السريع' : 'خريطة الصالة'}
+            </span>
+            {occupiedTablesCount > 0 && (
+              <span
+                className={`px-1.5 py-0.2 rounded-full text-[10px] font-bold ${
+                  state.viewMode === 'FLOOR_PLAN'
+                    ? 'bg-white text-zinc-900'
+                    : 'bg-zinc-900 text-white'
+                }`}
+              >
+                {occupiedTablesCount}
+              </span>
+            )}
+          </button>
+        )}
+
+        {/* Mobile Cart Button */}
+        {state.shift && (
+          <button
+            type="button"
+            onClick={onOpenMobileCart}
+            aria-label="سلة الطلب الحالية"
+            className="relative grid size-8 sm:size-9 place-items-center rounded-xl border border-zinc-200 bg-white text-zinc-700 hover:bg-zinc-100 lg:hidden shadow-2xs transition"
+          >
+            <ShoppingCart size={16} strokeWidth={1.75} />
+            {cartItemCount > 0 && (
+              <span className="absolute -top-1 -right-1 size-4 rounded-full bg-emerald-600 text-white font-bold text-[9px] grid place-items-center">
+                {cartItemCount}
+              </span>
+            )}
+          </button>
+        )}
+
+        <button onClick={() => state.setShowHistory(true)} className={posButton + ' px-2 sm:px-3 text-xs'}>
+          <History size={15} />
+          <span className="hidden sm:inline">الفواتير</span>
+        </button>
+
+        <button
+          disabled={state.sale.locked || state.items.length > 0}
+          onClick={() => state.setShowShift(true)}
+          className={posButton + ' px-2 sm:px-3 text-xs'}
+        >
+          {state.shift ? 'إغلاق الوردية' : 'فتح وردية'}
+        </button>
+
+        <Link href="/admin" className={posButton + ' px-2 sm:px-3 text-xs'}>
+          <ArrowRight size={15} />
+          <span className="hidden sm:inline">الإدارة</span>
+        </Link>
+      </div>
+    </header>
+  );
+}
+
+function PosSalePanel({
+  state,
+  isMobile,
+  onClose,
+}: {
+  state: PosWorkspace;
+  isMobile?: boolean;
+  onClose?: () => void;
+}) {
+  const { sale, totals, pricingError } = state;
+
+  return (
+    <aside className="h-full flex flex-col justify-between border-s border-zinc-200 bg-white overflow-hidden shadow-xs">
+      {/* 1. Header: Order Title & Order Type (سفري / صالة) */}
+      <div className="shrink-0 p-3 sm:p-4 border-b border-zinc-100 bg-white">
+        <div className="flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2">
+            {isMobile && (
+              <button
+                type="button"
+                onClick={onClose}
+                aria-label="إغلاق السلة"
+                className="grid size-8 place-items-center rounded-lg border border-zinc-200 text-zinc-500 hover:bg-zinc-100"
+              >
+                <X size={16} />
+              </button>
+            )}
+            <h2 className="flex items-center gap-2 font-bold text-sm text-zinc-900">
+              <ShoppingCart size={17} strokeWidth={1.75} className="text-zinc-700" />
+              الطلب الحالي
+            </h2>
+          </div>
+        </div>
+
+        <div className="mt-2.5">
+          <CartTypeSelector
+            type={state.type}
+            setType={state.setType}
+            locked={sale.locked}
+            selectedTable={state.selectedTable}
+            guestCount={state.guestCount}
+            activeTabOrderId={state.activeTabOrderId}
+            onOpenTablePicker={() => state.setIsTablePickerOpen(true)}
+            onClearTable={() => {
+              state.setSelectedTable(null);
+              state.setActiveTabOrderId(null);
+            }}
+            onGuestCountChange={state.setGuestCount}
+          />
+        </div>
+      </div>
+
+      {/* 2. Middle: Cart Lines (THE ONLY SCROLLABLE PART) */}
+      <div className="flex-1 min-h-0 overflow-y-auto p-3 sm:p-4 bg-zinc-50/40">
+        <CartLines
+          items={state.items}
+          products={state.products}
+          settings={state.settings}
+          locked={sale.locked}
+          changeQuantity={state.changeQuantity}
+        />
+      </div>
+
+      {/* 3. Bottom: Pinned Summary, Compact Options, Payment Trigger */}
+      <div className="shrink-0 border-t border-zinc-200 bg-white p-3 sm:p-4 space-y-2.5 shadow-sm">
+        <CartTotals totals={totals} settings={state.settings} />
+        <CartOptions
+          canDiscount={state.canDiscount}
+          discount={state.discount}
+          setDiscount={state.setDiscount}
+          notes={state.notes}
+          setNotes={state.setNotes}
+          settings={state.settings}
+          locked={sale.locked}
+        />
+
+        {(pricingError || sale.error) && (
+          <p role="alert" className="rounded-lg bg-rose-50 p-2 text-xs text-rose-700 font-medium">
+            {sale.error || pricingError}
+          </p>
+        )}
+
+        {/* Context-aware Checkout Buttons */}
+        {state.activeTabOrderId ? (
+          <button
+            disabled={!state.items.length}
+            onClick={() => state.addItemsToTab(state.activeTabOrderId!)}
+            className="flex items-center justify-center gap-2 rounded-xl bg-indigo-700 hover:bg-indigo-800 w-full py-2.5 text-sm font-bold text-white shadow-xs active:scale-95 transition disabled:opacity-50"
+          >
+            <Plus size={16} />
+            <span>إرسال الأصناف لطاولة {state.selectedTable?.tableNumber}</span>
+          </button>
+        ) : state.type === OrderType.DINE_IN && state.selectedTable ? (
+          <div className="space-y-1.5">
+            <button
+              disabled={!state.items.length}
+              onClick={() => state.openTableTab(state.selectedTable!.id, state.guestCount)}
+              className="flex items-center justify-center gap-2 rounded-xl bg-zinc-900 hover:bg-zinc-800 w-full py-2.5 text-xs font-bold text-white shadow-xs active:scale-95 transition disabled:opacity-50"
+            >
+              <Armchair size={15} />
+              <span>حفظ كطلب مفتوح لطاولة {state.selectedTable.tableNumber}</span>
+            </button>
+            <button
+              disabled={sale.pending || (!sale.uncertain && !totals) || !state.items.length}
+              onClick={() => state.setIsPaymentModalOpen(true)}
+              className="flex items-center justify-center gap-2 rounded-xl border border-zinc-200 bg-zinc-50 hover:bg-zinc-100 w-full py-2 text-xs font-semibold text-zinc-700 active:scale-95 transition disabled:opacity-50"
+            >
+              <span>دفع وتحصيل فوري بالكاونتر</span>
+            </button>
+          </div>
+        ) : (
+          <button
+            disabled={sale.pending || (!sale.uncertain && !totals) || !state.items.length}
+            onClick={() => {
+              if (sale.uncertain) {
+                state.checkout();
+              } else {
+                state.setIsPaymentModalOpen(true);
+              }
+            }}
+            className={posPrimary + ' w-full py-2.5 text-sm font-bold shadow-xs'}
+          >
+            {sale.pending
+              ? 'جارٍ تسجيل البيع...'
+              : sale.uncertain
+              ? 'تأكيد نتيجة العملية السابقة'
+              : totals
+              ? `دفع وتحصيل (${Money.fromMinor(totals.totalMinor, state.settings.currency).format(state.settings.locale)})`
+              : 'دفع وتحصيل'}
+          </button>
+        )}
+
+        <p className="text-center text-[10px] text-zinc-400">
+          المبلغ شامل الضريبة؛ تُراجع الأسعار والتوفر عند الحفظ.
+        </p>
+      </div>
+    </aside>
+  );
+}
+
+function PosDialogs({
+  state,
+  onPrintReceipt,
+  onPrintBill,
+  onPrintKotFromTable,
+  onPrintKotFromReceipt,
+}: {
+  state: PosWorkspace;
+  onPrintReceipt: (receipt: PosReceipt) => void;
+  onPrintBill: (tableId: string) => Promise<TableBillData | null>;
+  onPrintKotFromTable: (table: TableItemView) => void;
+  onPrintKotFromReceipt: (receipt: PosReceipt) => void;
+}) {
+  return (
+    <>
+      {state.product && (
+        <ProductPicker
+          product={state.product}
+          currency={state.settings.currency}
+          locale={state.settings.locale}
+          onAdd={state.add}
+          onClose={() => state.setProduct(null)}
+        />
+      )}
+      {state.showShift && (
+        <ShiftPanel
+          branchId={state.branch.id}
+          currency={state.settings.currency}
+          locale={state.settings.locale}
+          shift={state.shift}
+          onClose={() => state.setShowShift(false)}
+          onDone={(value, message) => {
+            state.setShift(value);
+            state.setShowShift(false);
+            state.setNotice(message);
+          }}
+        />
+      )}
+      {state.showHistory && (
+        <RecentReceipts
+          receipts={state.receipts}
+          onPrint={onPrintReceipt}
+          onPrintKot={onPrintKotFromReceipt}
+          onClose={() => state.setShowHistory(false)}
+        />
+      )}
+
+      {/* Table Picker Popup */}
+      {state.isTablePickerOpen && (
+        <TablePickerModal
+          tables={state.tables}
+          sections={state.sections}
+          selectedTableId={state.selectedTable?.id ?? null}
+          onSelectTable={(table) => {
+            state.setSelectedTable(table);
+            state.setType(OrderType.DINE_IN);
+          }}
+          onSelectOccupiedTable={(table) => {
+            state.setActiveTabModalTable(table);
+          }}
+          onClose={() => state.setIsTablePickerOpen(false)}
+        />
+      )}
+
+      {/* Active Table Tab Drawer / Modal */}
+      {state.activeTabModalTable && (
+        <TableTabModal
+          table={state.activeTabModalTable}
+          currency={state.settings.currency}
+          currencySymbol={state.settings.currency === 'EGP' ? 'ج.م' : state.settings.currency}
+          availableTables={state.tables.filter((t) => t.status === TableStatus.AVAILABLE)}
+          onClose={() => state.setActiveTabModalTable(null)}
+          onStartAddItems={(table) => {
+            state.setSelectedTable(table);
+            state.setActiveTabOrderId(table.activeOrderId);
+            state.setType(OrderType.DINE_IN);
+            state.setViewMode('SALE');
+            state.setActiveTabModalTable(null);
+          }}
+          onTransferTable={state.transferTable}
+          onPrintBill={onPrintBill}
+          onPrintKitchenTicket={onPrintKotFromTable}
+          onCloseTab={state.closeTableTab}
+        />
+      )}
+
+      {/* Central Checkout Payment Modal */}
+      {state.isPaymentModalOpen && state.items.length > 0 && (
+        <PaymentModal
+          isOpen={true}
+          onClose={() => state.setIsPaymentModalOpen(false)}
+          totals={state.totals}
+          settings={state.settings}
+          mode={state.mode}
+          setMode={state.setMode}
+          cash={state.cash}
+          setCash={state.setCash}
+          onCheckout={state.checkout}
+          isPending={state.sale.pending}
+          isUncertain={state.sale.uncertain}
+          error={state.sale.error || state.pricingError}
+          orderType={state.type}
+          tableNumber={state.selectedTable?.tableNumber}
+        />
+      )}
+    </>
+  );
+}
+
+function PosContent({
+  state,
+  showMobileCart,
+  setShowMobileCart,
+}: {
+  state: PosWorkspace;
+  showMobileCart: boolean;
+  setShowMobileCart: (show: boolean) => void;
+}) {
+  const cartItemCount = state.items.reduce((acc, item) => acc + item.quantity, 0);
+
+  if (!state.shift) {
+    return (
+      <div className="flex flex-1 flex-col items-center justify-center gap-4 py-24">
+        <Store size={40} strokeWidth={1.5} className="text-zinc-400" />
+        <h2 className="font-semibold text-zinc-900">افتح وردية الكاشير لبدء البيع</h2>
+        <button className={posPrimary} onClick={() => state.setShowShift(true)}>
+          فتح وردية
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex-1 min-h-0 relative flex flex-col lg:grid lg:grid-cols-[minmax(0,1fr)_400px] xl:grid-cols-[minmax(0,1fr)_420px] overflow-hidden">
+      {/* 1. Catalog / Floor Plan Area */}
+      <div className="flex-1 h-full overflow-hidden flex flex-col bg-zinc-50 pb-24 lg:pb-0">
+        {state.viewMode === 'FLOOR_PLAN' ? (
+          <PosFloorPlan
+            tables={state.tables}
+            sections={state.sections}
+            currencySymbol={state.settings.currency === 'EGP' ? 'ج.م' : state.settings.currency}
+            isRefreshing={state.isRefreshingTables}
+            onRefresh={state.refreshTables}
+            onSelectAvailableTable={(table, guests) => {
+              state.setSelectedTable(table);
+              state.setGuestCount(guests);
+              state.setType(OrderType.DINE_IN);
+              state.setActiveTabOrderId(null);
+              state.setViewMode('SALE');
+            }}
+            onSelectOccupiedTable={(table) => {
+              state.setActiveTabModalTable(table);
+            }}
+            onSwitchToCatalog={() => state.setViewMode('SALE')}
+          />
+        ) : (
+          <div className="flex-1 h-full overflow-y-auto">
+            <PosCatalog
+              categories={state.categories}
+              currency={state.settings.currency}
+              locale={state.settings.locale}
+              disabled={state.sale.locked}
+              onSelect={state.setProduct}
+            />
+          </div>
+        )}
+      </div>
+
+      {/* 2. Desktop Permanent Sale Panel (Hidden on mobile, pristine on lg+) */}
+      <div className="hidden lg:block h-full overflow-hidden">
+        <PosSalePanel state={state} />
+      </div>
+
+      {/* 3. Mobile Floating Sticky Cart Bar (Shown on < lg when cart has items) */}
+      {cartItemCount > 0 && !showMobileCart && (
+        <div className="fixed bottom-3 inset-x-3 sm:inset-x-6 z-30 lg:hidden">
+          <button
+            type="button"
+            onClick={() => setShowMobileCart(true)}
+            className="w-full bg-zinc-900 text-white rounded-2xl p-3 shadow-2xl flex items-center justify-between active:scale-[0.99] transition border border-zinc-800"
+          >
+            <div className="flex items-center gap-3">
+              <span className="grid size-9 place-items-center rounded-xl bg-zinc-800 text-white relative">
+                <ShoppingCart size={18} strokeWidth={1.8} />
+                <span className="absolute -top-1.5 -right-1.5 size-5 rounded-full bg-emerald-500 text-zinc-950 font-black text-[10px] grid place-items-center shadow-xs">
+                  {cartItemCount}
+                </span>
+              </span>
+              <div className="text-right">
+                <p className="text-[10px] text-zinc-400">إجمالي الطلب</p>
+                <p className="text-xs sm:text-sm font-extrabold text-white">
+                  {Money.fromMinor(
+                    state.totals?.totalMinor ?? 0,
+                    state.settings.currency
+                  ).format(state.settings.locale)}
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-1.5 bg-zinc-800 hover:bg-zinc-700 text-white text-xs font-bold px-3 py-1.5 rounded-xl transition">
+              <span>عرض السلة والدفع</span>
+              <ChevronLeft size={15} />
+            </div>
+          </button>
+        </div>
+      )}
+
+      {/* 4. Mobile Bottom Sheet / Drawer for Cart & Checkout */}
+      {showMobileCart && (
+        <div
+          className="fixed inset-0 z-50 flex flex-col justify-end lg:hidden"
+          role="dialog"
+          aria-modal="true"
+        >
+          {/* Backdrop blur overlay */}
+          <div
+            onClick={() => setShowMobileCart(false)}
+            className="fixed inset-0 bg-black/60 backdrop-blur-xs transition-opacity duration-200"
+          />
+
+          {/* Slide-up Container */}
+          <div className="relative z-10 w-full max-h-[92vh] bg-white rounded-t-3xl flex flex-col overflow-hidden shadow-2xl animate-in slide-in-from-bottom duration-200">
+            {/* Grab handle */}
+            <div className="w-12 h-1 bg-zinc-300 rounded-full mx-auto my-2 shrink-0" />
+            <div className="flex-1 min-h-0 overflow-hidden flex flex-col">
+              <PosSalePanel
+                state={state}
+                isMobile
+                onClose={() => setShowMobileCart(false)}
+              />
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+type ActivePrintDoc =
+  | { type: 'RECEIPT'; receipt: PosReceipt }
+  | { type: 'KOT'; ticket: KitchenTicketData }
+  | { type: 'BILL'; bill: TableBillData }
+  | null;
+
+export function PosClient(props: PosClientProps) {
+  const state = usePosWorkspace(props);
+  const [showMobileCart, setShowMobileCart] = useState(false);
+  const [activePrintDoc, setActivePrintDoc] = useState<ActivePrintDoc>(null);
+
+  // Ready orders from kitchen polling
+  const [readyOrders, setReadyOrders] = useState<ReadyOrderSummary[]>([]);
+  const [showReadyOrders, setShowReadyOrders] = useState(false);
+
+  // Auto-print KOT preference (saved in localStorage)
+  const [autoPrintKot, setAutoPrintKot] = useState<boolean>(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('resto_pos_auto_print_kot') === 'true';
+    }
+    return false;
+  });
+
+  const handleToggleAutoPrintKot = (enabled: boolean) => {
+    setAutoPrintKot(enabled);
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('resto_pos_auto_print_kot', String(enabled));
+    }
+  };
+
+  // Safely trigger print dialog whenever an active print document is queued
+  useEffect(() => {
+    if (!activePrintDoc) return;
+    const timer = setTimeout(() => {
+      window.print();
+    }, 120);
+    return () => clearTimeout(timer);
+  }, [activePrintDoc]);
+
+  const handlePrintReceipt = (receipt: PosReceipt) => {
+    setActivePrintDoc({ type: 'RECEIPT', receipt });
+  };
+
+  const handlePrintBill = async (tableId: string) => {
+    const billData = await state.printTableBill(tableId);
+    if (billData) {
+      setActivePrintDoc({ type: 'BILL', bill: billData });
+    }
+    return billData;
+  };
+
+  const handlePrintKotFromTable = (table: TableItemView) => {
+    if (!table.activeOrder || !table.activeOrder.items) return;
+    const order = table.activeOrder;
+    const orderItems = order.items ?? [];
+    if (orderItems.length === 0) return;
+    setActivePrintDoc({
+      type: 'KOT',
+      ticket: {
+        orderNumber: order.orderNumber,
+        type: 'DINE_IN',
+        tableName: table.tableNumber,
+        sectionName: table.sectionNameAr ?? null,
+        guestCount: order.guestCount,
+        customerName: null,
+        customerNotes: null,
+        kitchenNotes: null,
+        createdAt: order.openedAt,
+        branchName: state.branch.nameAr,
+        cashierName: null,
+        items: orderItems.map((i) => ({
+          id: i.id,
+          productNameAr: i.productNameAr,
+          sizeNameAr: i.sizeNameAr,
+          quantity: i.quantity,
+          modifiers: i.modifiers.map((m) => ({ nameAr: m.nameAr })),
+        })),
+      },
+    });
+  };
+
+  const handlePrintKotFromReceipt = (receipt: PosReceipt) => {
+    setActivePrintDoc({
+      type: 'KOT',
+      ticket: {
+        orderNumber: receipt.orderNumber,
+        type: receipt.type,
+        tableName: null,
+        sectionName: null,
+        guestCount: null,
+        customerName: receipt.customerName,
+        customerNotes: receipt.customerNotes,
+        kitchenNotes: null,
+        createdAt: receipt.createdAt,
+        branchName: receipt.branchName,
+        cashierName: null,
+        items: receipt.items.map((i) => ({
+          productNameAr: i.productNameAr,
+          productNameEn: i.productNameEn,
+          sizeNameAr: i.sizeNameAr,
+          quantity: i.quantity,
+          modifiers: i.modifiers.map((m) => ({ nameAr: m.nameAr })),
+        })),
+      },
+    });
+  };
+
+  const handlePrintBoth = (receipt: PosReceipt) => {
+    setActivePrintDoc({ type: 'RECEIPT', receipt });
+    setTimeout(() => {
+      handlePrintKotFromReceipt(receipt);
+    }, 450);
+  };
+
+  // When sale completes, execute auto-print or default receipt print
+  useEffect(() => {
+    if (!state.lastCompletedReceipt) return;
+    const receipt = state.lastCompletedReceipt;
+    const timer = setTimeout(() => {
+      if (autoPrintKot) {
+        handlePrintBoth(receipt);
+      } else {
+        handlePrintReceipt(receipt);
+      }
+    }, 0);
+    return () => clearTimeout(timer);
+  }, [state.lastCompletedReceipt, autoPrintKot]);
+
+  useEffect(() => {
+    let isMounted = true;
+    const fetchReady = async () => {
+      try {
+        const res = await listOrdersAction({
+          branchId: state.branch.id,
+          status: OrderStatus.READY_FOR_PICKUP,
+          limit: 20,
+        });
+        if (res.success && res.data && isMounted) {
+          const mapped: ReadyOrderSummary[] = res.data.orders.map((o) => ({
+            id: o.id,
+            orderNumber: o.orderNumber,
+            type: o.type,
+            tableName: o.tableName,
+            itemsSummary: o.items.map((i) => `${i.quantity}× ${i.productNameAr}`).join('، '),
+          }));
+          setReadyOrders(mapped);
+        }
+      } catch {
+        // Silently catch background poll error
+      }
+    };
+
+    fetchReady();
+    const timer = setInterval(fetchReady, 20000);
+    return () => {
+      isMounted = false;
+      clearInterval(timer);
+    };
+  }, [state.branch.id]);
+
+  const cartItemCount = state.items.reduce((acc, item) => acc + item.quantity, 0);
+  const isMobileCartOpen = showMobileCart && cartItemCount > 0;
+
+  return (
+    <div
+      dir="rtl"
+      className="h-screen max-h-screen overflow-hidden flex flex-col bg-zinc-50 text-zinc-900 font-sans"
+    >
+      <div className="flex flex-col flex-1 min-h-0 print:hidden overflow-hidden">
+        <PosHeader
+          state={state}
+          cartItemCount={cartItemCount}
+          readyOrdersCount={readyOrders.length}
+          onOpenMobileCart={() => setShowMobileCart(true)}
+          onOpenReadyOrders={() => setShowReadyOrders(true)}
+        />
+        {state.notice && (
+          <p
+            role="status"
+            className="shrink-0 border-b border-emerald-100 bg-emerald-50 px-6 py-2 text-xs text-emerald-800 font-medium"
+          >
+            {state.notice}
+          </p>
+        )}
+        <PosContent
+          state={state}
+          showMobileCart={isMobileCartOpen}
+          setShowMobileCart={setShowMobileCart}
+        />
+        <PosDialogs
+          state={state}
+          onPrintReceipt={handlePrintReceipt}
+          onPrintBill={handlePrintBill}
+          onPrintKotFromTable={handlePrintKotFromTable}
+          onPrintKotFromReceipt={handlePrintKotFromReceipt}
+        />
+      </div>
+
+      {/* Ready Orders Modal */}
+      {showReadyOrders && (
+        <ReadyOrdersModal
+          orders={readyOrders}
+          onClose={() => setShowReadyOrders(false)}
+        />
+      )}
+
+      {/* Post-Sale Modal (Options: Print Receipt, Print KOT, Print Both, Auto-Print toggle) */}
+      {state.lastCompletedReceipt && (
+        <PostSaleModal
+          receipt={state.lastCompletedReceipt}
+          currency={state.settings.currency}
+          autoPrintKot={autoPrintKot}
+          onToggleAutoPrintKot={handleToggleAutoPrintKot}
+          onPrintReceipt={handlePrintReceipt}
+          onPrintKot={handlePrintKotFromReceipt}
+          onPrintBoth={handlePrintBoth}
+          onClose={() => state.setLastCompletedReceipt(null)}
+        />
+      )}
+
+      {/* Printable Thermal Receipt & Guest Check (Only ONE active document rendered at a time to prevent duplicate / interleaved prints) */}
+      {activePrintDoc?.type === 'RECEIPT' && (
+        <PosReceiptPrint receipt={activePrintDoc.receipt} restaurantName={state.settings.nameAr} />
+      )}
+      {activePrintDoc?.type === 'BILL' && (
+        <TableBillPrint bill={activePrintDoc.bill} restaurantName={state.settings.nameAr} />
+      )}
+      {activePrintDoc?.type === 'KOT' && (
+        <KitchenOrderTicketPrint ticket={activePrintDoc.ticket} restaurantName={state.settings.nameAr} />
+      )}
+    </div>
+  );
+}
