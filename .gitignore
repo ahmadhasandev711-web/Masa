@@ -44,3 +44,5 @@ next-env.d.ts
 analysis.json
 artifacts/
 pnpm-lock.yaml
+tests/
+vitest.config.ts

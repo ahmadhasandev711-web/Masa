@@ -4,11 +4,14 @@ import { SYSTEM_PERMISSIONS } from '../src/domain/staff/enums/permission.enum';
 import { SYSTEM_ROLES, SystemRole } from '../src/domain/staff/enums/role.enum';
 
 async function main() {
-  console.log('[Seed] Starting complete database clean slate & staging seeding...');
+  console.log('[Seed] Checking database initialization status...');
+  const settingExists = await prisma.restaurantSetting.findFirst().catch(() => null);
+  if (settingExists) {
+    console.log('[Seed] Database is already initialized with restaurant settings. Skipping seed to preserve data.');
+    return;
+  }
 
-  // =========================================================================
-  // 0. Clean Existing Data (Safe Dependency Order)
-  // =========================================================================
+  console.log('[Seed] Fresh database detected. Starting complete initial seeding...');
   console.log('[Seed] Cleaning legacy/test records...');
   await prisma.orderItemModifier.deleteMany().catch(() => {});
   await prisma.orderItem.deleteMany().catch(() => {});
