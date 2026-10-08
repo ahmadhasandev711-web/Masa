@@ -47,3 +47,8 @@ artifacts/
 pnpm-lock.yaml
 tests/
 vitest.config.ts
+
+# ai agent instructions (local only)
+AGENTS.md
+GEMINI.md
+CLAUDE.md
