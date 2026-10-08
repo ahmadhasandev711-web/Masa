@@ -19,16 +19,12 @@ export async function listBranchDriversAction(
   branchId: string
 ): Promise<ActionResult<Awaited<ReturnType<ListBranchDriversUseCase['execute']>>>> {
   try {
-    const session = await SessionService.getCurrent();
-    if (!session) return toActionFailure(new Error('يرجى تسجيل الدخول'));
+    const session = await SessionService.requireAnyPermission(
+      [PermissionCode.MANAGE_ORDERS, PermissionCode.POS_ACCESS],
+      'لا تملك صلاحية استعراض طياري التوصيل'
+    );
 
-    const hasAccess =
-      session.isSuperAdmin ||
-      session.permissions.includes(PermissionCode.MANAGE_ORDERS) ||
-      session.permissions.includes(PermissionCode.POS_ACCESS);
-    if (!hasAccess) return toActionFailure(new Error('لا تملك صلاحية استعراض طياري التوصيل'));
-
-    BranchContextService.assertBranchAccess(session, branchId);
+    await BranchContextService.assertBranchAccess(session, branchId);
     const result = await new ListBranchDriversUseCase().execute(branchId);
     return { success: true, data: result };
   } catch (error) {
@@ -41,16 +37,12 @@ export async function saveDriverAction(
   input: SaveDriverDto
 ): Promise<ActionResult<Awaited<ReturnType<SaveDriverUseCase['execute']>>>> {
   try {
-    const session = await SessionService.getCurrent();
-    if (!session) return toActionFailure(new Error('يرجى تسجيل الدخول'));
+    const session = await SessionService.requireAnyPermission(
+      [PermissionCode.MANAGE_ORDERS, PermissionCode.MANAGE_STAFF],
+      'لا تملك صلاحية إدارة طياري التوصيل'
+    );
 
-    const hasAccess =
-      session.isSuperAdmin ||
-      session.permissions.includes(PermissionCode.MANAGE_ORDERS) ||
-      session.permissions.includes(PermissionCode.MANAGE_STAFF);
-    if (!hasAccess) return toActionFailure(new Error('لا تملك صلاحية إدارة طياري التوصيل'));
-
-    BranchContextService.assertBranchAccess(session, input.branchId);
+    await BranchContextService.assertBranchAccess(session, input.branchId);
     const result = await new SaveDriverUseCase().execute(input);
     return { success: true, data: result };
   } catch (error) {
@@ -63,15 +55,12 @@ export async function dispatchOrdersAction(
   input: DispatchOrderDto
 ): Promise<ActionResult<Awaited<ReturnType<DispatchOrderUseCase['execute']>>>> {
   try {
-    const session = await SessionService.getCurrent();
-    if (!session) return toActionFailure(new Error('يرجى تسجيل الدخول'));
+    const session = await SessionService.requireAnyPermission(
+      [PermissionCode.MANAGE_ORDERS],
+      'لا تملك صلاحية إسناد وتوزيع الطلبات'
+    );
 
-    const hasAccess =
-      session.isSuperAdmin ||
-      session.permissions.includes(PermissionCode.MANAGE_ORDERS);
-    if (!hasAccess) return toActionFailure(new Error('لا تملك صلاحية إسناد وتوزيع الطلبات'));
-
-    BranchContextService.assertBranchAccess(session, input.branchId);
+    await BranchContextService.assertBranchAccess(session, input.branchId);
     const result = await new DispatchOrderUseCase().execute(input);
     return { success: true, data: result };
   } catch (error) {
@@ -84,17 +73,13 @@ export async function getDriverPendingSettlementAction(
   driverId: string
 ): Promise<ActionResult<Awaited<ReturnType<GetDriverPendingSettlementUseCase['execute']>>>> {
   try {
-    const session = await SessionService.getCurrent();
-    if (!session) return toActionFailure(new Error('يرجى تسجيل الدخول'));
-
-    const hasAccess =
-      session.isSuperAdmin ||
-      session.permissions.includes(PermissionCode.MANAGE_ORDERS) ||
-      session.permissions.includes(PermissionCode.MANAGE_FINANCE);
-    if (!hasAccess) return toActionFailure(new Error('لا تملك صلاحية استعراض حسابات عهدة الطيار'));
+    const session = await SessionService.requireAnyPermission(
+      [PermissionCode.MANAGE_ORDERS, PermissionCode.MANAGE_FINANCE],
+      'لا تملك صلاحية استعراض حسابات عهدة الطيار'
+    );
 
     const result = await new GetDriverPendingSettlementUseCase().execute(driverId);
-    BranchContextService.assertBranchAccess(session, result.driver.branchId);
+    await BranchContextService.assertBranchAccess(session, result.driver.branchId);
     return { success: true, data: result };
   } catch (error) {
     return toActionFailure(error);
@@ -108,16 +93,12 @@ export async function settleDriverCashAction(input: {
   notes?: string;
 }): Promise<ActionResult<Awaited<ReturnType<SettleDriverCashUseCase['execute']>>>> {
   try {
-    const session = await SessionService.getCurrent();
-    if (!session) return toActionFailure(new Error('يرجى تسجيل الدخول'));
+    const session = await SessionService.requireAnyPermission(
+      [PermissionCode.MANAGE_ORDERS, PermissionCode.MANAGE_FINANCE],
+      'لا تملك صلاحية تسوية العهد النقدية'
+    );
 
-    const hasAccess =
-      session.isSuperAdmin ||
-      session.permissions.includes(PermissionCode.MANAGE_ORDERS) ||
-      session.permissions.includes(PermissionCode.MANAGE_FINANCE);
-    if (!hasAccess) return toActionFailure(new Error('لا تملك صلاحية تسوية العهد النقدية'));
-
-    BranchContextService.assertBranchAccess(session, input.branchId);
+    await BranchContextService.assertBranchAccess(session, input.branchId);
     const result = await new SettleDriverCashUseCase().execute({
       branchId: input.branchId,
       driverId: input.driverId,

@@ -27,6 +27,7 @@ export class AuthenticateStaffUseCase {
     });
 
     if (!user || !user.isActive) {
+      await PasswordService.burnComparisonTime(validated.password);
       throw new UnauthorizedError('اسم المستخدم أو كلمة المرور غير صحيحة أو الحساب غير مفعل');
     }
 

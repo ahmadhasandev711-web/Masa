@@ -17,15 +17,10 @@ export async function getKitchenOrdersAction(
   input: GetKitchenOrdersDto = {}
 ): Promise<ActionResult<Awaited<ReturnType<GetKitchenOrdersUseCase['execute']>>>> {
   try {
-    const session = await SessionService.getCurrent();
-    if (!session) return toActionFailure(new Error('يرجى تسجيل الدخول'));
-
-    const hasAccess =
-      session.isSuperAdmin ||
-      session.permissions.includes(PermissionCode.KITCHEN_VIEW) ||
-      session.permissions.includes(PermissionCode.MANAGE_ORDERS);
-
-    if (!hasAccess) return toActionFailure(new Error('لا تملك صلاحية عرض شاشة المطبخ'));
+    const session = await SessionService.requireAnyPermission(
+      [PermissionCode.KITCHEN_VIEW, PermissionCode.MANAGE_ORDERS],
+      'لا تملك صلاحية عرض شاشة المطبخ'
+    );
 
     let effectiveBranchId = input.branchId;
     if (!session.isSuperAdmin) {
@@ -45,15 +40,10 @@ export async function bumpKitchenOrderAction(
   input: BumpKitchenOrderDto
 ): Promise<ActionResult<Awaited<ReturnType<BumpKitchenOrderUseCase['execute']>>>> {
   try {
-    const session = await SessionService.getCurrent();
-    if (!session) return toActionFailure(new Error('يرجى تسجيل الدخول'));
-
-    const hasAccess =
-      session.isSuperAdmin ||
-      session.permissions.includes(PermissionCode.KITCHEN_BUMP) ||
-      session.permissions.includes(PermissionCode.MANAGE_ORDERS);
-
-    if (!hasAccess) return toActionFailure(new Error('لا تملك صلاحية تجهيز وإنهاء طلبات المطبخ'));
+    const session = await SessionService.requireAnyPermission(
+      [PermissionCode.KITCHEN_BUMP, PermissionCode.MANAGE_ORDERS],
+      'لا تملك صلاحية تجهيز وإنهاء طلبات المطبخ'
+    );
 
     await BranchContextService.assertBranchAccess(session, input.branchId);
 
@@ -68,22 +58,17 @@ export async function toggleKitchenItemPreparedAction(
   input: ToggleKitchenItemPreparedDto
 ): Promise<ActionResult<Awaited<ReturnType<ToggleKitchenItemPreparedUseCase['execute']>>>> {
   try {
-    const session = await SessionService.getCurrent();
-    if (!session) return toActionFailure(new Error('يرجى تسجيل الدخول'));
-
-    const hasAccess =
-      session.isSuperAdmin ||
-      session.permissions.includes(PermissionCode.KITCHEN_VIEW) ||
-      session.permissions.includes(PermissionCode.KITCHEN_BUMP) ||
-      session.permissions.includes(PermissionCode.MANAGE_ORDERS);
-
-    if (!hasAccess) return toActionFailure(new Error('لا تملك صلاحية تحديث حالة صنف المطبخ'));
+    const session = await SessionService.requireAnyPermission(
+      [PermissionCode.KITCHEN_VIEW, PermissionCode.KITCHEN_BUMP, PermissionCode.MANAGE_ORDERS],
+      'لا تملك صلاحية تحديث حالة صنف المطبخ'
+    );
 
     if (input.branchId) {
       await BranchContextService.assertBranchAccess(session, input.branchId);
     }
 
-    const data = await new ToggleKitchenItemPreparedUseCase().execute(input);
+    const scope = BranchContextService.scopeOf(session);
+    const data = await new ToggleKitchenItemPreparedUseCase().execute(input, scope);
     return { success: true, data };
   } catch (error) {
     return toActionFailure(error);

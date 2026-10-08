@@ -4,6 +4,8 @@ import { redirect } from 'next/navigation';
 import { AuthenticateStaffUseCase } from '../../application/staff/use-cases/authenticate-staff.use-case';
 import { loginSchema } from '../../application/staff/dto/staff.dto';
 import { SessionService } from '../../infrastructure/auth/session.service';
+import { LoginThrottle } from '../../infrastructure/security/login-throttle';
+import { getClientIp } from '../../infrastructure/security/client-ip';
 import { toActionFailure } from './action-result';
 import { PermissionCode } from '../../domain/staff/enums/permission.enum';
 
@@ -15,7 +17,10 @@ export async function loginAction(_previous: { error?: string }, formData: FormD
       password: formData.get('password'),
       branchId: formData.get('branchId') || undefined,
     });
+    const ip = await getClientIp();
+    LoginThrottle.assertAllowed(ip, credentials.username);
     const result = await new AuthenticateStaffUseCase().execute(credentials);
+    LoginThrottle.clearAccount(ip, credentials.username);
     await SessionService.write(result.token);
     if (result.user.permissions.includes(PermissionCode.POS_ACCESS) && !result.user.permissions.includes(PermissionCode.MANAGE_MENU)) destination = '/pos';
   } catch (error) {

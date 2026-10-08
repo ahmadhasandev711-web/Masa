@@ -6,6 +6,7 @@ import { JwtService } from './jwt.service';
 import { prisma } from '../db/prisma';
 import { env } from '../config/env';
 import { SystemRole } from '../../domain/staff/enums/role.enum';
+import { SESSION_TTL_SECONDS } from './auth.constants';
 
 export class SessionService {
   private static readonly COOKIE_NAME = 'resto_session';
@@ -45,13 +46,22 @@ export class SessionService {
     return session!;
   }
 
+  public static async requireAnyPermission(
+    permissions: PermissionCode[],
+    deniedMessage?: string
+  ): Promise<UserSessionContext> {
+    const session = await this.getCurrent();
+    RbacGuard.assertAnyPermission(session, permissions, deniedMessage);
+    return session!;
+  }
+
   public static async write(token: string): Promise<void> {
     (await cookies()).set(this.COOKIE_NAME, token, {
       path: '/',
       httpOnly: true,
       sameSite: 'lax',
       secure: env.NODE_ENV === 'production',
-      maxAge: 60 * 60 * 12,
+      maxAge: SESSION_TTL_SECONDS,
     });
   }
 

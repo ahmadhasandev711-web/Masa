@@ -4,10 +4,14 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "prisma generate && prisma db push && tsx prisma/seed.ts && next build --webpack",
+    "build": "prisma generate && next build --webpack",
     "start": "next start",
     "lint": "eslint",
-    "test": "vitest run --fileParallelism=false"
+    "test": "vitest run --fileParallelism=false",
+    "db:push": "prisma db push",
+    "db:seed": "tsx prisma/seed.ts",
+    "db:seed:demo": "tsx prisma/seed-demo.ts",
+    "db:setup": "prisma db push && tsx prisma/seed.ts"
   },
   "dependencies": {
     "@prisma/adapter-mariadb": "^7.10.0",

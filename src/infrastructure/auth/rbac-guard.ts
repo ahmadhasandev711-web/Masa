@@ -26,6 +26,24 @@ export class RbacGuard {
   }
 
   /**
+   * Asserts that the user holds at least one of the given permissions.
+   */
+  public static assertAnyPermission(
+    session: UserSessionContext | null | undefined,
+    permissions: PermissionCode[],
+    deniedMessage?: string
+  ): void {
+    if (!session) {
+      throw new UnauthorizedError();
+    }
+
+    const allowed = permissions.some((permission) => this.hasPermission(session, permission));
+    if (!allowed) {
+      throw new ForbiddenError(deniedMessage ?? 'User does not possess any of the required permissions');
+    }
+  }
+
+  /**
    * Checks if user has permission without throwing an exception.
    */
   public static hasPermission(

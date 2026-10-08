@@ -1,6 +1,7 @@
 import { SignJWT, jwtVerify } from 'jose';
 import { env } from '../config/env';
 import { UnauthorizedError } from '../../domain/shared/errors/domain-error';
+import { SESSION_TTL_SECONDS } from './auth.constants';
 
 export interface TokenPayload {
   userId: string;
@@ -15,9 +16,12 @@ export class JwtService {
   }
 
   /**
-   * Generates a signed JWT with expiration (default 7 days).
+   * Generates a signed JWT with expiration (default: session lifetime).
    */
-  public static async sign(payload: TokenPayload, expiresIn: string = '7d'): Promise<string> {
+  public static async sign(
+    payload: TokenPayload,
+    expiresIn: string = `${SESSION_TTL_SECONDS}s`
+  ): Promise<string> {
     const key = this.getSecretKey();
     return await new SignJWT(payload)
       .setProtectedHeader({ alg: 'HS256' })
@@ -32,7 +36,7 @@ export class JwtService {
   public static async verify<T extends TokenPayload = TokenPayload>(token: string): Promise<T> {
     try {
       const key = this.getSecretKey();
-      const { payload } = await jwtVerify(token, key);
+      const { payload } = await jwtVerify(token, key, { algorithms: ['HS256'] });
       return payload as T;
     } catch {
       throw new UnauthorizedError('Invalid, corrupted, or expired authentication token');

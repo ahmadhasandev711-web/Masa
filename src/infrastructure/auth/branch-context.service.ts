@@ -9,7 +9,27 @@ export interface UserSessionContext {
   isSuperAdmin: boolean;
 }
 
+/** allowedBranchIds === null means unrestricted (super admin). */
+export interface BranchScope {
+  allowedBranchIds: string[] | null;
+}
+
 export class BranchContextService {
+  public static scopeOf(session: UserSessionContext): BranchScope {
+    return { allowedBranchIds: session.isSuperAdmin ? null : session.assignedBranchIds };
+  }
+
+  /**
+   * Rejects access to a resource owned by a branch outside the caller's scope.
+   * Resources not yet assigned to any branch (null) are visible to all scopes.
+   */
+  public static assertResourceInScope(scope: BranchScope, resourceBranchId: string | null): void {
+    if (!resourceBranchId || scope.allowedBranchIds === null) return;
+    if (!scope.allowedBranchIds.includes(resourceBranchId)) {
+      throw new ForbiddenError('You do not have access to resources of this branch');
+    }
+  }
+
   /**
    * Resolves and verifies the active branch for an operation.
    * Ensures the user has explicit permission to operate within this branch.

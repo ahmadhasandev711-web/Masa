@@ -6,6 +6,7 @@ import path from 'path';
 import { PermissionCode } from '../../domain/staff/enums/permission.enum';
 import { ForbiddenError, NotFoundError, ValidationError } from '../../domain/shared/errors/domain-error';
 import { SessionService } from '../../infrastructure/auth/session.service';
+import { detectImageType } from '../../infrastructure/uploads/image-signature';
 import { prisma } from '../../infrastructure/db/prisma';
 import { CategoryInput, ProductInput, ModifierGroupInput, BranchAvailabilityInput } from '../../application/catalog/dto/catalog.dto';
 import { SaveCategoryUseCase } from '../../application/catalog/use-cases/save-category.use-case';
@@ -110,13 +111,15 @@ export async function uploadProductImageAction(formData: FormData): Promise<Acti
       throw new ValidationError('حجم الصورة كبير جداً. الحد الأقصى 5 ميجابايت');
     }
 
-    const ext = allowedMimeTypes[fileType];
+    const buffer = Buffer.from(await file.arrayBuffer());
+    const ext = detectImageType(buffer);
+    if (!ext) {
+      throw new ValidationError('محتوى الملف ليس صورة صالحة (JPEG, PNG, WEBP, AVIF)');
+    }
+
     const fileName = `prod_${crypto.randomUUID()}_${Date.now()}.${ext}`;
     const uploadDir = path.join(process.cwd(), 'public', 'uploads', 'products');
     await fs.promises.mkdir(uploadDir, { recursive: true });
-
-    const arrayBuffer = await file.arrayBuffer();
-    const buffer = Buffer.from(arrayBuffer);
     await fs.promises.writeFile(path.join(uploadDir, fileName), buffer);
 
     return { success: true, data: { url: `/uploads/products/${fileName}` } };

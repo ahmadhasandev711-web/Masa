@@ -17,22 +17,11 @@ import { GetOrderDetailUseCase } from '../../application/ordering/use-cases/get-
 import { AssignOrderBranchUseCase } from '../../application/ordering/use-cases/assign-order-branch.use-case';
 import { UpdateOrderStatusUseCase } from '../../application/ordering/use-cases/update-order-status.use-case';
 import { GetOrdersMetricsUseCase } from '../../application/ordering/use-cases/get-orders-metrics.use-case';
-import { headers } from 'next/headers';
 import { ActionResult, toActionFailure } from './action-result';
 import { ForbiddenError, NotFoundError, ValidationError } from '../../domain/shared/errors/domain-error';
 import { RateLimiter } from '../../infrastructure/security/rate-limiter';
 import { RateLimiterKeys, RateLimitPolicies } from '../../infrastructure/security/rate-limiter-keys';
-
-async function getClientIp(): Promise<string> {
-  try {
-    const headerList = await headers();
-    const forwardedFor = headerList.get('x-forwarded-for');
-    const realIp = headerList.get('x-real-ip');
-    return (forwardedFor ? forwardedFor.split(',')[0].trim() : realIp) || '127.0.0.1';
-  } catch {
-    return '127.0.0.1';
-  }
-}
+import { getClientIp } from '../../infrastructure/security/client-ip';
 
 export async function placeOnlineOrderAction(input: PlaceOnlineOrderDto): Promise<ActionResult<{ orderNumber: string }>> {
   try {
