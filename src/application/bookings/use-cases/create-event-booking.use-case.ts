@@ -74,8 +74,8 @@ export class CreateEventBookingUseCase {
       day: 'numeric',
     });
 
-    const messageText = `مرحباً إدارة مطعم ماسا (MASA Kitchen)،
-أود الاستفسار وتأكيد حجز مناسبة وبوفيه خاص:
+    const messageText = `مرحباً إدارة قهوة كايرو (Qahwet Cairo)،
+أود الاستفسار وتأكيد حجز طاولة / مناسبة خاصة:
 • الاسم: ${input.customerName}
 • رقم الهاتف: ${normalizedPhone}
 • تاريخ الفعالية: ${formattedDate}

@@ -2,9 +2,9 @@ import type { MetadataRoute } from 'next';
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: 'منظومة ماسا لإدارة المطاعم | MASA Restaurant Platform',
-    short_name: 'MASA OS',
-    description: 'المنصة الشاملة لإدارة المطاعم، نقاط البيع، والعمليات السحابية',
+    name: 'قهوة كايرو | كافيه ومقهى ٢٤ ساعة',
+    short_name: 'قهوة كايرو',
+    description: 'قهوة كايرو - كافيه ومقهى ٢٤ ساعة في ستريب مول بالعاشر من رمضان',
     start_url: '/admin',
     scope: '/',
     display: 'standalone',

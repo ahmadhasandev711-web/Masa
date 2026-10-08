@@ -191,8 +191,8 @@ export function InvoicesClient({
   branches,
   cashiers,
   currencySymbol = 'ج.م',
-  restaurantNameAr = 'مطعم ماسا',
-  restaurantNameEn = 'MASA Kitchen',
+  restaurantNameAr = 'قهوة كايرو',
+  restaurantNameEn = 'Qahwet Cairo',
   isBranchRestricted = false,
   userBranchId = null,
 }: InvoicesClientProps) {

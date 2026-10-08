@@ -26,7 +26,7 @@ export function MenuQrModal({
   const [copied, setCopied] = useState(false);
 
   // Compute live full URL on client
-  const origin = typeof window !== 'undefined' ? window.location.origin : 'https://masa.restaurant';
+  const origin = typeof window !== 'undefined' ? window.location.origin : 'https://qahwetcairo.com';
   const menuUrl = useMemo(() => {
     return `${origin}/menu`;
   }, [origin]);
@@ -54,7 +54,7 @@ export function MenuQrModal({
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = `MASA_Menu_QR_${activeBranch?.nameAr || 'General'}.svg`;
+    link.download = `QahwetCairo_Menu_QR_${activeBranch?.nameAr || 'General'}.svg`;
     link.click();
     URL.revokeObjectURL(url);
   };

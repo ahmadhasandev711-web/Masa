@@ -43,7 +43,7 @@ export interface DriverSettlementPrintData {
 
 export function DriverSettlementReceipt({
   data,
-  restaurantName = 'مطعم ماسا',
+  restaurantName = 'قهوة كايرو',
   currencySymbol = 'ج.م',
   onAfterPrint,
 }: {

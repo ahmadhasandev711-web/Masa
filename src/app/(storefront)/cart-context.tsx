@@ -45,8 +45,8 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   // Load from localStorage on mount
   useEffect(() => {
     try {
-      const savedCart = localStorage.getItem('masa_cart');
-      const savedLocale = localStorage.getItem('masa_locale') as 'ar' | 'en' | null;
+      const savedCart = localStorage.getItem('cairo_cart');
+      const savedLocale = localStorage.getItem('cairo_locale') as 'ar' | 'en' | null;
 
       queueMicrotask(() => {
         if (savedCart) {
@@ -71,13 +71,13 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   // Save items to localStorage
   useEffect(() => {
     if (isLoaded) {
-      localStorage.setItem('masa_cart', JSON.stringify(items));
+      localStorage.setItem('cairo_cart', JSON.stringify(items));
     }
   }, [items, isLoaded]);
 
   const setLocale = (newLocale: 'ar' | 'en') => {
     setLocaleState(newLocale);
-    localStorage.setItem('masa_locale', newLocale);
+    localStorage.setItem('cairo_locale', newLocale);
   };
 
   const toggleLocale = () => {

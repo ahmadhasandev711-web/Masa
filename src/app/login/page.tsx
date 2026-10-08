@@ -14,7 +14,7 @@ export default function LoginPage() {
             <ArrowRight size={15} />
             <span>العودة للموقع الرئيسي</span>
           </Link>
-          <span className="text-3xs font-mono text-zinc-400">MASA Platform</span>
+          <span className="text-3xs font-mono text-zinc-400">Qahwet Cairo</span>
         </div>
 
         <div className="flex items-center gap-3">

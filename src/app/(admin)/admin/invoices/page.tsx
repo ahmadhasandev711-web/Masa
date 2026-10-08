@@ -69,8 +69,8 @@ export default async function AdminInvoicesPage() {
       branches={branches as BranchOption[]}
       cashiers={cashiers as CashierOption[]}
       currencySymbol={setting?.currencySymbol || 'ج.م'}
-      restaurantNameAr={setting?.nameAr || 'مطعم ماسا'}
-      restaurantNameEn={setting?.nameEn || 'MASA Kitchen'}
+      restaurantNameAr={setting?.nameAr || 'قهوة كايرو'}
+      restaurantNameEn={setting?.nameEn || 'Qahwet Cairo'}
       isBranchRestricted={isBranchRestricted}
       userBranchId={userBranchId}
     />

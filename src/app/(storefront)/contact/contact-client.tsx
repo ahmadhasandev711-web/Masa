@@ -118,15 +118,15 @@ export function ContactClient({
             </span>
           </div>
           <h1 className="text-3xl font-black tracking-tight text-white sm:text-5xl lg:text-6xl">
-            {isAr ? 'تواصل مع مطعم ' : 'Contact '}
+            {isAr ? 'تواصل مع ' : 'Contact '}
             <span className="bg-gradient-to-r from-rose-400 to-amber-400 bg-clip-text text-transparent">
               {brandName}
             </span>
           </h1>
           <p className="mx-auto mt-4 max-w-2xl text-sm leading-relaxed text-zinc-400 sm:text-base">
             {isAr
-              ? 'سواء كنت ترغب في الاستفسار عن تفاصيل قائمتنا، حجز طاولة خاصة، أو تنظيم مناسبة كبرى وبوفيه فاخر؛ فريقنا مستعد لتلبية كافة تطلعاتك.'
-              : 'Whether inquiring about our menu, reserving a private table, or organizing a large-scale celebration or corporate banquet; our team is at your service.'}
+              ? 'سواء كنت ترغب في الاستفسار عن قائمتنا، حجز طاولة أو ركن للقاءات العمل والأصدقاء؛ فريقنا في ستريب مول جاهز لخدمتك على مدار الساعة.'
+              : 'Whether inquiring about our coffee menu, reserving a table for meetings or friendly gatherings; our team at Strip Mall is ready to serve you 24/7.'}
           </p>
         </div>
       </section>

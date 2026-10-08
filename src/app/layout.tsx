@@ -19,17 +19,17 @@ export const viewport: Viewport = {
 };
 
 export const metadata: Metadata = {
-  title: 'منظومة إدارة المطاعم | MASA Platform',
-  description: 'منصة احترافية لإدارة المطاعم، الفروع، والمبيعات',
+  title: 'قهوة كايرو | كافيه ومقهى ٢٤ ساعة',
+  description: 'قهوة كايرو - كافيه ومقهى ٢٤ ساعة في ستريب مول بالعاشر من رمضان. قهوة مختصة، مشروبات ساخنة وباردة، وحلويات.',
   manifest: '/manifest.webmanifest',
   icons: {
-    icon: '/icons/icon.svg',
-    apple: '/icons/apple-touch-icon.png',
+    icon: '/logo.png',
+    apple: '/logo.png',
   },
   appleWebApp: {
     capable: true,
     statusBarStyle: 'black-translucent',
-    title: 'MASA OS',
+    title: 'Qahwet Cairo',
   },
 };
 

@@ -10,8 +10,8 @@ import { BookingsClient } from './bookings-client';
 export const dynamic = 'force-dynamic';
 
 export const metadata: Metadata = {
-  title: 'إدارة الحجوزات والفعاليات | MASA Admin',
-  description: 'متابعة وتأكيد حجوزات المناسبات والبوفيهات الخاصة',
+  title: 'إدارة الحجوزات والفعاليات | قهوة كايرو',
+  description: 'متابعة وتأكيد طلبات الحجوزات والفعاليات الخاصة في قهوة كايرو',
 };
 
 export default async function AdminBookingsPage() {

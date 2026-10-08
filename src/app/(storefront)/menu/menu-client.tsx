@@ -150,7 +150,7 @@ function ProductModal({ product, currencySymbol, isAr, onClose, onAdd }: Product
               {isAr ? product.category.nameAr : product.category.nameEn}
             </span>
             {product.isFeatured && (
-              <span className="rounded-full bg-gradient-to-r from-rose-600 to-amber-600 px-2.5 py-0.5 text-2xs font-bold text-white shadow-sm">
+              <span className="rounded-full bg-gradient-to-r from-amber-600 to-amber-500 px-2.5 py-0.5 text-2xs font-bold text-white shadow-sm">
                 {isAr ? 'الأكثر طلباً' : 'Best Seller'}
               </span>
             )}
@@ -302,7 +302,7 @@ function ProductModal({ product, currencySymbol, isAr, onClose, onAdd }: Product
             type="button"
             onClick={() => onAdd(selectedSizeId, selectedModifiers, quantity)}
             disabled={!selectedSize}
-            className="w-full flex items-center justify-between rounded-2xl bg-gradient-to-r from-rose-600 to-amber-600 px-5 py-3.5 text-white shadow-lg hover:opacity-95 transition-opacity disabled:opacity-50"
+            className="w-full flex items-center justify-between rounded-2xl bg-gradient-to-r from-amber-600 to-amber-500 px-5 py-3.5 text-white shadow-lg hover:opacity-95 transition-opacity disabled:opacity-50"
           >
             <div className="flex items-center gap-2.5">
               <ShoppingCart className="h-5 w-5" />
@@ -382,12 +382,12 @@ export function MenuClient({ categories, products, currencySymbol }: MenuClientP
       {/* Header */}
       <div className="text-center space-y-2">
         <h1 className="text-3xl font-extrabold tracking-tight text-white sm:text-5xl">
-          {isAr ? 'قائمة الطعام الرقمية' : 'Digital Menu'}
+          {isAr ? 'قائمة المشروبات والحلويات' : 'Cafe & Drinks Menu'}
         </h1>
         <p className="text-xs sm:text-sm text-zinc-400">
           {isAr
-            ? 'تصفح أشهى الأطباق والمشاوي واطلبها مباشرة للتوصيل السريع'
-            : 'Explore our culinary creations and order online for swift delivery'}
+            ? 'تصفح أرقى أنواع القهوة المختصة والمشروبات والحلويات واطلبها مباشرة'
+            : 'Explore our specialty coffees, handcrafted drinks, and artisanal desserts'}
         </p>
       </div>
 
@@ -399,7 +399,7 @@ export function MenuClient({ categories, products, currencySymbol }: MenuClientP
             type="text"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            placeholder={isAr ? 'ابحث عن طبق، ستيك، سلطة، أو حلوى...' : 'Search dishes, steaks, salads...'}
+            placeholder={isAr ? 'ابحث عن قهوة، لاتيه، موخيتو، أو حلوى...' : 'Search coffee, latte, mojito, dessert...'}
             className="w-full bg-transparent px-3 text-xs sm:text-sm text-white placeholder:text-zinc-500 focus:outline-hidden"
           />
           {searchTerm && (
@@ -416,7 +416,7 @@ export function MenuClient({ categories, products, currencySymbol }: MenuClientP
           onClick={() => setSelectedCategoryId('ALL')}
           className={`shrink-0 rounded-full px-4 py-2 text-xs font-semibold transition-all ${
             selectedCategoryId === 'ALL'
-              ? 'bg-gradient-to-r from-rose-600 to-amber-600 text-white shadow-md'
+              ? 'bg-gradient-to-r from-amber-600 to-amber-500 text-white shadow-md'
               : 'border border-white/10 bg-white/5 text-zinc-300 hover:border-white/20 hover:text-white'
           }`}
         >
@@ -430,7 +430,7 @@ export function MenuClient({ categories, products, currencySymbol }: MenuClientP
               onClick={() => setSelectedCategoryId(cat.id)}
               className={`shrink-0 rounded-full px-4 py-2 text-xs font-semibold transition-all ${
                 isSelected
-                  ? 'bg-gradient-to-r from-rose-600 to-amber-600 text-white shadow-md'
+                  ? 'bg-gradient-to-r from-amber-600 to-amber-500 text-white shadow-md'
                   : 'border border-white/10 bg-white/5 text-zinc-300 hover:border-white/20 hover:text-white'
               }`}
             >
@@ -486,7 +486,7 @@ export function MenuClient({ categories, products, currencySymbol }: MenuClientP
 
                   {/* Featured badge */}
                   {prod.isFeatured && (
-                    <span className="absolute top-3 end-3 rounded-full bg-gradient-to-r from-rose-600 to-amber-600 px-2 py-0.5 text-3xs font-bold text-white shadow-sm">
+                    <span className="absolute top-3 end-3 rounded-full bg-gradient-to-r from-amber-600 to-amber-500 px-2 py-0.5 text-3xs font-bold text-white shadow-sm">
                       {isAr ? 'الأكثر طلباً' : 'Best Seller'}
                     </span>
                   )}
@@ -528,7 +528,7 @@ export function MenuClient({ categories, products, currencySymbol }: MenuClientP
                   <button
                     type="button"
                     onClick={() => handleOpenProduct(prod)}
-                    className="inline-flex items-center gap-1.5 rounded-xl bg-gradient-to-r from-rose-600 to-amber-600 px-4 py-2 text-xs font-bold text-white shadow-sm hover:opacity-90 transition-opacity"
+                    className="inline-flex items-center gap-1.5 rounded-xl bg-gradient-to-r from-amber-600 to-amber-500 px-4 py-2 text-xs font-bold text-white shadow-sm hover:opacity-90 transition-opacity"
                   >
                     <ShoppingCart className="h-3.5 w-3.5" />
                     <span>{isAr ? 'اطلب الآن' : 'Order Now'}</span>
@@ -545,7 +545,7 @@ export function MenuClient({ categories, products, currencySymbol }: MenuClientP
         <div className="sticky bottom-4 z-30 mx-auto max-w-lg">
           <Link
             href="/cart"
-            className="flex items-center justify-between rounded-2xl bg-gradient-to-r from-rose-600 to-amber-600 px-5 py-3.5 text-white shadow-2xl backdrop-blur-md transition-transform hover:scale-[1.02]"
+            className="flex items-center justify-between rounded-2xl bg-gradient-to-r from-amber-600 to-amber-500 px-5 py-3.5 text-white shadow-2xl backdrop-blur-md transition-transform hover:scale-[1.02]"
           >
             <div className="flex items-center gap-3">
               <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-white/20">

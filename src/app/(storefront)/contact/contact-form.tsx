@@ -82,8 +82,8 @@ export function ContactForm({ branches }: { branches: BranchOption[] }) {
         </div>
         <p className="text-xs text-zinc-300 max-w-md mx-auto leading-relaxed">
           {isAr
-            ? 'تم حفظ بياناتك بنجاح في قاعدة بيانات المطعم، وجارٍ فتح محادثة واتساب الرسمية للتنسيق الفوري مع مدير الحفلات.'
-            : 'Your inquiry has been stored in our system and WhatsApp has been initiated for direct coordination with our catering manager.'}
+            ? 'تم حفظ بياناتك بنجاح في قاعدة بيانات الكافيه، وجارٍ فتح محادثة واتساب الرسمية للتنسيق الفوري مع فريق خدمة العملاء.'
+            : 'Your inquiry has been stored in our system and WhatsApp has been initiated for direct coordination with our team.'}
         </p>
 
         <div className="pt-2 flex flex-wrap items-center justify-center gap-3">
@@ -210,8 +210,8 @@ export function ContactForm({ branches }: { branches: BranchOption[] }) {
           onChange={(e) => setNotes(e.target.value)}
           placeholder={
             isAr
-              ? 'أخبرنا عن نوع المناسبة (حفل عمل، عيد ميلاد، عزومة عائلية...) أو أطباق معينة تفضلها'
-              : 'Tell us about the event type (corporate banquet, birthday, family dinner) or specific menu requests'
+              ? 'أخبرنا عن نوع المناسبة (اجتماع عمل، احتفال، لقاء أصدقاء...) أو مشروبات وحلويات تفضلونها'
+              : 'Tell us about the event type (work meeting, celebration, friends gathering) or preferred drinks & desserts'
           }
           className="w-full rounded-xl border border-white/10 bg-zinc-900 px-3.5 py-2.5 text-xs text-white outline-none focus:border-amber-500 placeholder:text-zinc-600"
         />

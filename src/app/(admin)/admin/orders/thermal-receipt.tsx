@@ -51,8 +51,8 @@ export interface ThermalReceiptProps {
 
 export function ThermalReceipt({
   order,
-  restaurantNameAr = 'مطعم ماسا',
-  restaurantNameEn = 'MASA Kitchen',
+  restaurantNameAr = 'قهوة كايرو',
+  restaurantNameEn = 'Qahwet Cairo',
   currencySymbol = 'ج.م',
 }: ThermalReceiptProps) {
   const formatMoney = (minor: number) => (minor / 100).toFixed(2);
@@ -192,7 +192,7 @@ export function ThermalReceipt({
       {/* Receipt Footer */}
       <div className="text-center pt-1 text-[10px] space-y-0.5">
         <p className="font-semibold">شكراً لاختياركم {restaurantNameAr}!</p>
-        <p className="text-[9px] text-gray-500 font-sans">Printed via MASA Restaurant Platform</p>
+        <p className="text-[9px] text-gray-500 font-sans">Printed via Qahwet Cairo Platform</p>
       </div>
     </div>
   );

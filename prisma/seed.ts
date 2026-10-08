@@ -205,9 +205,9 @@ async function main() {
   }
 
   // 8. Ensure Initial Cafe Menu Catalog for Qahwet Cairo
-  const productCount = await prisma.product.count();
-  if (productCount === 0) {
-    console.log('[Seed] Seeding initial Qahwet Cairo cafe menu items...');
+  const categoryCount = await prisma.category.count();
+  if (categoryCount === 0) {
+    console.log('[Seed] Seeding initial Qahwet Cairo cafe menu items & categories...');
 
     const menuData = [
       {

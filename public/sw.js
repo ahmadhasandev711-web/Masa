@@ -1,5 +1,5 @@
-// MASA Restaurant Platform - Service Worker
-const CACHE_NAME = 'masa-os-v1';
+// Qahwet Cairo Platform - Service Worker
+const CACHE_NAME = 'qahwet-cairo-v1';
 const PRECACHE_URLS = [
   '/',
   '/admin',

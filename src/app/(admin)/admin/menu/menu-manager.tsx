@@ -189,9 +189,9 @@ export function MenuManager({ categories: initialCategories, products: initialPr
       <MenuQrModal
         isOpen={isQrModalOpen}
         onClose={() => setIsQrModalOpen(false)}
-        restaurantNameAr="ماسا"
-        restaurantNameEn="MASA Kitchen"
-        branches={branches.map((b) => ({ id: b.id, nameAr: b.nameAr, phone: '01012345678' }))}
+        restaurantNameAr="قهوة كايرو"
+        restaurantNameEn="Qahwet Cairo"
+        branches={branches.map((b) => ({ id: b.id, nameAr: b.nameAr, phone: '01000000000' }))}
       />
     </div>
   );
