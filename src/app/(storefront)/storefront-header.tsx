@@ -1,8 +1,9 @@
 'use client';
 
+import Image from 'next/image';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { ShoppingBag, Globe, Menu, X, Utensils } from 'lucide-react';
+import { ShoppingBag, Globe, Menu, X, Coffee } from 'lucide-react';
 import { useState } from 'react';
 import { useCart } from './cart-context';
 
@@ -23,26 +24,33 @@ export function StorefrontHeader({
 
   const navLinks = [
     { label: isAr ? 'الرئيسية' : 'Home', href: '/' },
-    { label: isAr ? 'قائمة الطعام' : 'Menu', href: '/menu' },
+    { label: isAr ? 'قائمة المشروبات والمنيو' : 'Menu', href: '/menu' },
     { label: isAr ? `عن ${restaurantNameAr}` : 'Our Story', href: '/about' },
-    { label: isAr ? 'فروعنا' : 'Branches', href: '/branches' },
+    { label: isAr ? 'الفرع والموقع' : 'Location', href: '/branches' },
     { label: isAr ? 'تواصل معنا' : 'Contact', href: '/contact' },
   ];
 
   return (
-    <header className="sticky top-0 z-40 w-full border-b border-white/10 bg-zinc-950/80 backdrop-blur-md transition-all">
-      <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3.5 sm:px-6">
+    <header className="sticky top-0 z-40 w-full border-b border-white/10 bg-zinc-950/90 backdrop-blur-md transition-all">
+      <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3 sm:px-6">
         {/* Brand Logo */}
         <Link href="/" className="flex items-center gap-3 group">
-          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-rose-600 to-amber-600 text-white shadow-md transition-transform group-hover:scale-105">
-            <Utensils className="h-5 w-5" strokeWidth={2} />
+          <div className="relative h-11 w-11 shrink-0 overflow-hidden rounded-xl border border-amber-500/30 bg-black/60 shadow-md transition-transform group-hover:scale-105 flex items-center justify-center">
+            <Image
+              src="/storefront/logo.png"
+              alt={isAr ? restaurantNameAr : restaurantNameEn}
+              fill
+              className="object-contain p-1"
+              priority
+              sizes="44px"
+            />
           </div>
           <div className="flex flex-col">
-            <span className="text-base font-extrabold tracking-wider text-white">
+            <span className="text-base font-extrabold tracking-wide text-white group-hover:text-amber-400 transition-colors">
               {isAr ? restaurantNameAr : restaurantNameEn}
             </span>
-            <span className="text-3xs font-medium tracking-widest text-zinc-400 uppercase font-mono">
-              {isAr ? 'مطعم ومشاوي فاخرة' : 'Fine Dining & Grill'}
+            <span className="text-3xs font-medium tracking-wider text-amber-500/90 font-mono">
+              {isAr ? 'مقهى وكافيه ٢٤ ساعة • ستريب مول' : 'Specialty Coffee & Lounge 24/7'}
             </span>
           </div>
         </Link>
@@ -96,7 +104,7 @@ export function StorefrontHeader({
           {/* Order CTA */}
           <Link
             href="/menu"
-            className="hidden sm:inline-flex items-center justify-center rounded-lg bg-gradient-to-r from-rose-600 to-amber-600 px-4 py-2 text-xs font-bold text-white shadow-sm transition-opacity hover:opacity-95"
+            className="hidden sm:inline-flex items-center justify-center rounded-lg bg-gradient-to-r from-amber-600 to-amber-500 px-4 py-2 text-xs font-bold text-white shadow-sm transition-opacity hover:opacity-95"
           >
             {isAr ? 'اطلب الآن' : 'Order Now'}
           </Link>
@@ -132,7 +140,7 @@ export function StorefrontHeader({
             <Link
               href="/menu"
               onClick={() => setMobileMenuOpen(false)}
-              className="flex w-full items-center justify-center rounded-lg bg-gradient-to-r from-rose-600 to-amber-600 py-2.5 text-xs font-bold text-white"
+              className="flex w-full items-center justify-center rounded-lg bg-gradient-to-r from-amber-600 to-amber-500 py-2.5 text-xs font-bold text-white"
             >
               {isAr ? 'تصفح المنيو واطلب الآن' : 'View Menu & Order'}
             </Link>

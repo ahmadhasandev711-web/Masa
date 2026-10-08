@@ -1,6 +1,6 @@
 'use client';
 
-import { Phone, Mail, MapPin, Clock, HelpCircle, Utensils, Sparkles } from 'lucide-react';
+import { Phone, Mail, MapPin, Clock, HelpCircle, Coffee, Sparkles } from 'lucide-react';
 import { useCart } from '../cart-context';
 import { ContactForm } from './contact-form';
 
@@ -29,78 +29,78 @@ export function ContactClient({
   const isAr = locale === 'ar';
 
   const brandName = isAr ? restaurantNameAr : restaurantNameEn;
-  const hotlinePhone = phone || '01012345678';
+  const hotlinePhone = phone || '01000000000';
   const mainAddress = isAr
-    ? address || 'شارع النصر، المعادي، القاهرة'
-    : 'Corniche El Nile, El Nasr St., Maadi, Cairo';
+    ? address || 'العاشر من رمضان - ستريب مول'
+    : 'Strip Mall, 10th of Ramadan City';
 
   const contactCards = [
     {
       icon: Phone,
-      title: isAr ? 'الخط الساخن والحجوزات' : 'Hotline & Table Inquiries',
+      title: isAr ? 'خدمة العملاء والاستفسار' : 'Customer Care & Inquiries',
       value: hotlinePhone,
-      desc: isAr ? 'متاح يومياً من 12:00 م حتى 02:00 ص' : 'Available daily from 12:00 PM to 02:00 AM',
+      desc: isAr ? 'متاح على مدار 24 ساعة طوال أيام الأسبوع' : 'Available 24/7 round the clock',
       action: `tel:${hotlinePhone}`,
-      actionLabel: isAr ? 'اتصل بنا مباشرة' : 'Call Hotline Directly',
+      actionLabel: isAr ? 'اتصل بنا مباشرة' : 'Call Directly',
     },
     {
       icon: Mail,
-      title: isAr ? 'خدمة العملاء والشركات' : 'Customer Care & Corporate',
-      value: 'info@masa.restaurant',
-      desc: isAr ? 'للاستفسارات والشكاوى وشراكات الأعمال' : 'For inquiries, feedback, and business partnerships',
-      action: 'mailto:info@masa.restaurant',
-      actionLabel: isAr ? 'راسلنا عبر البريد' : 'Email Us Directly',
+      title: isAr ? 'البريد الإلكتروني' : 'Email & Business',
+      value: 'info@qahwetcairo.com',
+      desc: isAr ? 'للاستفسارات والشكاوى ومقترحات التعاون' : 'For feedback, corporate orders, and inquiries',
+      action: 'mailto:info@qahwetcairo.com',
+      actionLabel: isAr ? 'راسلنا عبر البريد' : 'Email Us',
     },
     {
       icon: MapPin,
-      title: isAr ? 'الإدارة والفرع الرئيسي' : 'Main Branch & Management',
+      title: isAr ? 'موقع الفرع' : 'Branch Location',
       value: mainAddress,
-      desc: isAr ? 'استقبال الضيوف والاجتماعات الرسمية' : 'Guest reception and formal banquets',
+      desc: isAr ? 'ستريب مول، مدينة العاشر من رمضان' : 'Strip Mall, 10th of Ramadan City',
       action: '/branches',
-      actionLabel: isAr ? 'عرض موقع الفرع' : 'View Branch Locations',
+      actionLabel: isAr ? 'عرض تفاصيل الموقع' : 'View Location',
     },
     {
       icon: Clock,
-      title: isAr ? 'ساعات العمل والتوصيل' : 'Operating & Delivery Hours',
-      value: isAr ? '12:00 ظهراً - 02:00 فجراً' : '12:00 PM - 02:00 AM',
-      desc: isAr ? 'طوال أيام الأسبوع بدون عطلات' : '7 days a week without interruption',
+      title: isAr ? 'ساعات العمل' : 'Opening Hours',
+      value: isAr ? 'مفتوح 24 ساعة يومياً' : 'Open 24/7 Daily',
+      desc: isAr ? 'نستقبلكم طوال أيام الأسبوع دون توقف' : 'Serving you 7 days a week non-stop',
       action: '/menu',
-      actionLabel: isAr ? 'اطلب أونلاين الآن' : 'Order Online Now',
+      actionLabel: isAr ? 'تصفح قائمة المشروبات' : 'View Cafe Menu',
     },
   ];
 
   const faqs = [
     {
       q: isAr
-        ? 'هل يمكن حجز طاولات مسبقاً للعائلات والمجموعات؟'
-        : 'Can we reserve VIP tables for families and groups in advance?',
+        ? 'هل قهوة كايرو مفتوحة طوال الـ 24 ساعة؟'
+        : 'Is Qahwet Cairo open 24 hours every day?',
       a: isAr
-        ? 'نعم بكل تأكيد، نرحب بالحجوزات المسبقة للطاولات العائلية وقاعات VIP في فروعنا الثلاثة عبر الاتصال المباشر بالفرع أو تعبئة نموذج الحجز أعلاه.'
-        : 'Yes, absolutely. We welcome advance bookings for VIP tables and family lounges across our 3 branches by calling the branch directly or submitting the inquiry form above.',
+        ? 'نعم بكل تأكيد! فرعنا في ستريب مول بالعاشر من رمضان يستقبلكم على مدار 24 ساعة طوال أيام الأسبوع لتقديم أرقى المشروبات والحلويات.'
+        : 'Yes, absolutely! Our Strip Mall branch in 10th of Ramadan City is open 24 hours, 7 days a week to welcome you anytime.',
     },
     {
       q: isAr
-        ? 'ما هي مدة توصيل الطلبات للمنازل؟'
-        : 'What is the estimated delivery time for online orders?',
+        ? 'هل تتوفر جلسات مريحة للعمل والمذاكرة؟'
+        : 'Are there comfortable seating areas suitable for study and remote work?',
       a: isAr
-        ? 'متوسط وقت التوصيل يتراوح بين 30 إلى 45 دقيقة حسب موقعك وبعدك عن أقرب فرع، مع ضمان استلام الطعام في حقائب حرارية مخصصة.'
-        : 'Average delivery takes between 30 to 45 minutes depending on your proximity to the nearest branch, guaranteed in insulated thermal bags.',
+        ? 'نعم، المكان مجهز بجلسات مريحة ورايقة، شبكة واي فاي سريعة، ومنافذ شحن لتستمتع بالعمل أو القراءة بهدوء.'
+        : 'Yes, we offer cozy ergonomic seating, high-speed Wi-Fi, and power outlets designed for productive remote work and peaceful reading.',
     },
     {
       q: isAr
-        ? 'هل تقدمون خدمات البوفيه والحفلات الخارجية (Catering)؟'
-        : 'Do you offer on-site Catering & Private Event Buffets?',
+        ? 'هل يمكن طلب المشروبات والحلويات أونلاين؟'
+        : 'Can we order drinks and desserts online for takeout or delivery?',
       a: isAr
-        ? 'نعم، يقدم فريق طهاة ماسا بوفيهات شواء وحفلات خارجية كاملة للشركات والمناسبات الخاصة مع معدات التقديم والطهي المباشر أمام الضيوف.'
-        : 'Yes! Our culinary team caters full private banquets and corporate buffets with live open-flame cooking stations and hotel-grade service equipment.',
+        ? 'نعم، يمكنك تصفح المنيو الرقمي وإرسال طلبك مباشرة وسيقوم فريقنا بتجهيزه طازجاً في أسرع وقت.'
+        : 'Yes! Browse our full digital menu and place your order directly. Our baristas will prepare it fresh and prompt.',
     },
     {
       q: isAr
-        ? 'ما هي طرق الدفع المقبولة لديكم؟'
-        : 'What payment methods do you accept?',
+        ? 'أين يقع فرع قهوة كايرو بالتحديد؟'
+        : 'Where is Qahwet Cairo located exactly?',
       a: isAr
-        ? 'نقبل الدفع نقداً عند الاستلام، وكذلك بطاقات الدفع الإلكتروني (فيزا وماستركارد وميزة) ومحافظ الهاتف المحمولة عبر نقاط البيع المتنقلة.'
-        : 'We accept Cash on Delivery as well as all major credit/debit cards (Visa, MasterCard, Meeza) and mobile electronic wallets via mobile POS.',
+        ? 'يقع فرعنا في ستريب مول بمدينة العاشر من رمضان، بموقع متميز ومواقف سيارات واسعة.'
+        : 'Located conveniently in Strip Mall, 10th of Ramadan City, with ample parking and easy access.',
     },
   ];
 
@@ -171,48 +171,48 @@ export function ContactClient({
           {/* Left Column: Info */}
           <div className="space-y-5 lg:col-span-5">
             <div className="inline-flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-amber-500 font-mono">
-              <Utensils size={15} />
+              <Coffee size={15} />
               <span>
-                {isAr ? 'خدمات الحفلات والمناسبات الخاصة' : 'Catering & Private Banquets'}
+                {isAr ? 'جلسات العمل والمناسبات والضيافة' : 'Meetings, Gatherings & Hospitality'}
               </span>
             </div>
             <h2 className="text-2xl font-black text-white sm:text-4xl leading-tight">
               {isAr
-                ? `اجعل مناسبتك ذكرى لا تُنسى مع ضيافة ${brandName}`
-                : `Make Your Occasion Unforgettable with ${brandName}`}
+                ? `اجعل لقاءاتك أكثر تميزاً مع ضيافة ${brandName}`
+                : `Elevate Your Gatherings with ${brandName}`}
             </h2>
             <p className="text-xs sm:text-sm leading-relaxed text-zinc-300">
               {isAr
-                ? 'نوفر حلول ضيافة وبوفيهات متكاملة للمؤتمرات، حفلات الزفاف، أعياد الميلاد، واللقاءات العائلية الكبرى. يقدم طهاتنا تشكيلات استثنائية من المشاوي والستيك والمقبلات مع التجهيز الفندقي الراقي.'
-                : 'We deliver comprehensive catering solutions for conferences, weddings, birthdays, and large family gatherings. Our culinary crew offers prime live grills and hotel-grade presentation.'}
+                ? 'نوفر خدمات ضيافة متكاملة وتجهيزات خاصة لاجتماعات العمل، جلسات المذاكرة الجماعية، وأعياد الميلاد في أجواء راقية وجلسات مريحة مع تشكيلة واسعة من القهوة والحلويات.'
+                : 'We offer full coffee bar service and hospitality packages for corporate meetings, study groups, and intimate celebrations in a refined, cozy setting.'}
             </p>
             <div className="rounded-2xl border border-white/10 bg-zinc-900/50 p-5 space-y-3">
               <p className="text-xs font-bold text-white">
-                {isAr ? 'مميزات خدمة البوفيه والـ Catering:' : 'Key Catering Privileges:'}
+                {isAr ? 'مميزات خدمات الضيافة في قهوة كايرو:' : 'Hospitality Advantages at Qahwet Cairo:'}
               </p>
               <ul className="space-y-2 text-3xs text-zinc-300">
                 <li className="flex items-center gap-2">
                   <span className="size-1.5 rounded-full bg-amber-400 shrink-0" />
                   <span>
                     {isAr
-                      ? 'محطات طهي وشواء مباشر أمام الحضور (Live Cooking Stations)'
-                      : 'Live open-flame cooking & carving stations for guests'}
+                      ? 'باريستا محترف ومشروبات قهوة مختصة محضرة طازجة'
+                      : 'Expert baristas crafting fresh specialty coffee on demand'}
                   </span>
                 </li>
                 <li className="flex items-center gap-2">
                   <span className="size-1.5 rounded-full bg-amber-400 shrink-0" />
                   <span>
                     {isAr
-                      ? 'أطقم تقديم فندقية ومشروبات ومقبلات ترحيبية'
-                      : 'Hotel-grade chafing dishes, premium silverware, and welcome drinks'}
+                      ? 'جلسات هادئة مجهزة بإنترنت فائق السرعة ومنافذ كهرباء'
+                      : 'Quiet zones equipped with high-speed Wi-Fi and power outlets'}
                   </span>
                 </li>
                 <li className="flex items-center gap-2">
                   <span className="size-1.5 rounded-full bg-amber-400 shrink-0" />
                   <span>
                     {isAr
-                      ? 'قوائم طعام مخصصة تلائم ميزانيتك وعدد ضيوفك'
-                      : 'Tailored tasting menus customized to your guest count and budget'}
+                      ? 'تشكيلات حلويات ومخبوزات طازجة يومياً'
+                      : 'Daily freshly baked pastries and signature artisanal desserts'}
                   </span>
                 </li>
               </ul>

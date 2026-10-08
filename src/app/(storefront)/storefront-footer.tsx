@@ -1,7 +1,8 @@
 'use client';
 
+import Image from 'next/image';
 import Link from 'next/link';
-import { Phone, MapPin, Clock, ShieldCheck, Utensils } from 'lucide-react';
+import { Phone, MapPin, Clock, ShieldCheck, Coffee } from 'lucide-react';
 import { useCart } from './cart-context';
 
 interface StorefrontFooterProps {
@@ -19,6 +20,7 @@ export function StorefrontFooter({
 }: StorefrontFooterProps) {
   const { locale } = useCart();
   const isAr = locale === 'ar';
+  const displayAddress = address || (isAr ? 'العاشر من رمضان - ستريب مول' : 'Strip Mall, 10th of Ramadan City');
 
   return (
     <footer className="border-t border-white/10 bg-zinc-950 text-zinc-400">
@@ -27,8 +29,14 @@ export function StorefrontFooter({
           {/* Brand Col */}
           <div className="space-y-4 md:col-span-2">
             <div className="flex items-center gap-3">
-              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-rose-600 to-amber-600 text-white shadow-xs">
-                <Utensils className="h-4 w-4" strokeWidth={2} />
+              <div className="relative h-10 w-10 shrink-0 overflow-hidden rounded-xl border border-amber-500/30 bg-black/60 shadow-xs flex items-center justify-center">
+                <Image
+                  src="/storefront/logo.png"
+                  alt={isAr ? restaurantNameAr : restaurantNameEn}
+                  fill
+                  className="object-contain p-1"
+                  sizes="40px"
+                />
               </div>
               <span className="text-lg font-extrabold text-white">
                 {isAr ? restaurantNameAr : restaurantNameEn}
@@ -36,12 +44,12 @@ export function StorefrontFooter({
             </div>
             <p className="max-w-md text-xs leading-relaxed text-zinc-400">
               {isAr
-                ? 'نقدم لضيوفنا تجربة طعام استثنائية تجمع بين أجود قطع اللحوم والمشاوي الفاخرة، ومكونات طازجة محضرة بأعلى معايير الإتقان والجودة.'
-                : 'Providing our guests with an extraordinary dining experience combining the finest steaks, grilled dishes, and freshly prepared recipes.'}
+                ? 'نقدم لضيوفنا تجربة كافيه استثنائية على مدار 24 ساعة؛ قهوة مختصة، مشروبات ساخنة ومثلجة، حلويات طازجة، وجلسات مريحة ورايقة في قلب ستريب مول - العاشر من رمضان.'
+                : 'Offering an exceptional 24/7 cafe experience: specialty coffee, hot & iced drinks, fresh bakery, and comfortable cozy seating in the heart of Strip Mall - 10th of Ramadan.'}
             </p>
-            <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-1 text-2xs text-zinc-400 font-mono">
-              <ShieldCheck className="h-3.5 w-3.5 text-emerald-500" />
-              <span>{isAr ? 'منظومة MASA المعتمدة' : 'Powered by MASA Platform'}</span>
+            <div className="inline-flex items-center gap-2 rounded-full border border-amber-500/30 bg-amber-500/10 px-3 py-1 text-2xs text-amber-400 font-mono">
+              <Coffee className="h-3.5 w-3.5 text-amber-400" />
+              <span>{isAr ? 'قهوة كايرو • مفتوح 24 ساعة' : 'Qahwet Cairo • Open 24/7'}</span>
             </div>
           </div>
 
@@ -58,27 +66,27 @@ export function StorefrontFooter({
               </li>
               <li>
                 <Link href="/menu" className="hover:text-white transition-colors">
-                  {isAr ? 'قائمة الطعام' : 'Menu'}
+                  {isAr ? 'قائمة المشروبات والحلويات' : 'Menu'}
                 </Link>
               </li>
               <li>
                 <Link href="/about" className="hover:text-white transition-colors">
-                  {isAr ? 'عن المطعم وقصتنا' : 'Our Story'}
+                  {isAr ? 'عن قهوة كايرو' : 'Our Story'}
                 </Link>
               </li>
               <li>
                 <Link href="/branches" className="hover:text-white transition-colors">
-                  {isAr ? 'فروعنا وساعات العمل' : 'Our Branches'}
+                  {isAr ? 'موقعنا في ستريب مول' : 'Our Location'}
                 </Link>
               </li>
               <li>
                 <Link href="/contact" className="hover:text-white transition-colors">
-                  {isAr ? 'تواصل معنا وحجز الحفلات' : 'Contact & Catering'}
+                  {isAr ? 'تواصل معنا' : 'Contact Us'}
                 </Link>
               </li>
               <li>
                 <Link href="/cart" className="hover:text-white transition-colors">
-                  {isAr ? 'سلة التوصيل' : 'Delivery Cart'}
+                  {isAr ? 'سلة الطلبات' : 'Cart'}
                 </Link>
               </li>
               <li>
@@ -92,15 +100,13 @@ export function StorefrontFooter({
           {/* Contact Details */}
           <div>
             <h3 className="text-xs font-bold uppercase tracking-wider text-white">
-              {isAr ? 'معلومات التواصل' : 'Contact & Hours'}
+              {isAr ? 'العنوان وساعات العمل' : 'Location & Hours'}
             </h3>
             <ul className="mt-4 space-y-2.5 text-xs">
-              {address && (
-                <li className="flex items-start gap-2">
-                  <MapPin className="h-4 w-4 shrink-0 text-amber-500 mt-0.5" strokeWidth={1.75} />
-                  <span>{address}</span>
-                </li>
-              )}
+              <li className="flex items-start gap-2">
+                <MapPin className="h-4 w-4 shrink-0 text-amber-500 mt-0.5" strokeWidth={1.75} />
+                <span>{displayAddress}</span>
+              </li>
               {phone && (
                 <li className="flex items-center gap-2 font-mono">
                   <Phone className="h-4 w-4 shrink-0 text-amber-500" strokeWidth={1.75} />
@@ -109,7 +115,9 @@ export function StorefrontFooter({
               )}
               <li className="flex items-center gap-2">
                 <Clock className="h-4 w-4 shrink-0 text-amber-500" strokeWidth={1.75} />
-                <span>{isAr ? 'يومياً: 12:00 م - 02:00 ص' : 'Daily: 12:00 PM - 02:00 AM'}</span>
+                <span className="text-emerald-400 font-semibold">
+                  {isAr ? 'مفتوح 24 ساعة يومياً (طوال الأسبوع)' : 'Open 24/7 Every Day'}
+                </span>
               </li>
             </ul>
           </div>

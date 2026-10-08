@@ -2,7 +2,7 @@
 
 import Image from 'next/image';
 import Link from 'next/link';
-import { Utensils, Award, Flame, ShieldCheck, ArrowLeft, ArrowRight, Sparkles } from 'lucide-react';
+import { Coffee, Award, Sparkles, Clock, ArrowLeft, ArrowRight, Heart } from 'lucide-react';
 import { useCart } from '../cart-context';
 
 interface AboutClientProps {
@@ -18,51 +18,51 @@ export function AboutClient({ restaurantNameAr, restaurantNameEn }: AboutClientP
 
   const stats = [
     {
-      value: '+50,000',
-      label: isAr ? 'عميل وضيف استمتع بتجربتنا' : 'Delighted Guests Served',
+      value: '24/7',
+      label: isAr ? 'مفتوح على مدار الساعة يومياً' : 'Open Round The Clock Daily',
     },
     {
-      value: '3',
-      label: isAr ? 'فروع في أرقى المواقع الجغرافية' : 'Prime Branch Locations',
+      value: '+25',
+      label: isAr ? 'صنف قهوة ومشروبات مميزة' : 'Artisanal Coffee & Drink Varieties',
     },
     {
       value: '100%',
-      label: isAr ? 'لحوم أنجوس فاخرة طازجة يومياً' : 'Certified Prime Angus Daily',
+      label: isAr ? 'حبوب بن مختارة ومحمصة بعناية' : 'Hand-Selected Premium Beans',
     },
     {
       value: '4.9/5',
-      label: isAr ? 'تقييم رضى العملاء والضيوف' : 'Average Guest Rating',
+      label: isAr ? 'تقييم رواد وعشاق القهوة' : 'Average Guest Rating',
     },
   ];
 
   const pillars = [
     {
-      icon: Flame,
-      title: isAr ? 'شغف الشواء واللهب الحي' : 'Living Flame & Charcoal Grill',
+      icon: Coffee,
+      title: isAr ? 'أصالة البن وسحر التحميص' : 'Artisanal Roasting & Craft',
       description: isAr
-        ? 'نطهو لحومنا على الفحم الحي واللهب المباشر بدرجات حرارة مضبوطة لنمنح كل قطعة نكهة مدخنة غنية وقرمشة خارجية لا تُنسى.'
-        : 'We sear our prime steaks over glowing charcoal embers to impart an unforgettable smokiness, caramelized crust, and succulent tenderness.',
+        ? 'ننتقي حبوب البن بعناية فائقة ونطحنها طازجة لكل فنجان لنمنحك تجربة غنية بالنكهة والقوام المثالي.'
+        : 'Carefully sourced beans, freshly ground per cup to ensure rich aromas and quintessential body.',
     },
     {
-      icon: ShieldCheck,
-      title: isAr ? 'أجود المكونات الطازجة' : 'Farm-Fresh Premium Ingredients',
+      icon: Sparkles,
+      title: isAr ? 'أجواء راقية وجلسات مريحة' : 'Cozy & Comfortable Seating',
       description: isAr
-        ? 'نختار لحوم الأنجوس المعتمدة وقطع الخضار العضوية الطازجة التي تصلنا صباح كل يوم لضمان أقصى درجات النقاء والسلامة الغذائية.'
-        : 'Every ingredient is vetted for pristine freshness, from hand-trimmed steaks to locally harvested crisp greens and dairy.',
+        ? 'جلسات داخلية وخارجية مهيأة للعمل، المذاكرة، أو الاسترخاء واللقاءات الودية مع إنترنت فائق السرعة.'
+        : 'Thoughtfully designed spaces for remote work, study sessions, and intimate talks with high-speed Wi-Fi.',
     },
     {
-      icon: Award,
-      title: isAr ? 'وصفات حصرية ونكهات أصيلة' : 'Signature House-Crafted Recipes',
+      icon: Clock,
+      title: isAr ? 'خدمة متواصلة 24 ساعة' : '24/7 Non-Stop Service',
       description: isAr
-        ? 'تتبيلاتنا الخاصة وصوصات المشروم والباربيكيو والترافل محضرة يدوياً داخل مطابخنا دون أي معجونات صناعية أو مواد حافظة.'
-        : 'Our gourmet marinades, velvety truffle sauces, and aged rubs are prepared completely from scratch without artificial additives.',
+        ? 'أبوابنا مفتوحة لكم دائماً في ستريب مول بالعاشر من رمضان لاستقبالكم وتقديم أفضل المشروبات في أي وقت.'
+        : 'Open around the clock at Strip Mall, 10th of Ramadan City, to serve your coffee cravings at any hour.',
     },
     {
-      icon: Utensils,
-      title: isAr ? 'ضيافة راقية تليق بضيوفنا' : 'Warm Hospitality & Excellence',
+      icon: Heart,
+      title: isAr ? 'ضيافة مصرية وكرم استقبال' : 'Warm Egyptian Hospitality',
       description: isAr
-        ? 'فريق عمل مدرب ومحترف على أعلى المعايير الفندقية لتأمين خدمة سريعة وترحيب دافئ يليق بكل زائر وعائلة.'
-        : 'Our team is trained to deliver warm, attentive service to ensure every visit and delivery feels truly special and effortless.',
+        ? 'فريق عمل ودود ومحترف يسعى لجعل كل زيارة لك في قهوة كايرو تجربة دافئة تشعرك بأنك في بيتك.'
+        : 'Friendly, attentive service dedicated to making every visit to Qahwet Cairo feel welcoming and homey.',
     },
   ];
 
@@ -77,20 +77,20 @@ export function AboutClient({ restaurantNameAr, restaurantNameEn }: AboutClientP
             <Sparkles size={14} className="text-amber-500" />
             <span>
               {isAr
-                ? 'قصة الشغف والتميز في عالم الطهي'
-                : 'Our Story of Culinary Passion & Excellence'}
+                ? 'قصة الشغف والراحة في عالم القهوة'
+                : 'Our Story of Coffee Passion & Comfort'}
             </span>
           </div>
           <h1 className="text-3xl font-black tracking-tight text-white sm:text-5xl lg:text-6xl">
-            {isAr ? 'عن مطعم ' : 'About '}
-            <span className="bg-gradient-to-r from-rose-400 to-amber-400 bg-clip-text text-transparent">
+            {isAr ? 'عن ' : 'About '}
+            <span className="bg-gradient-to-r from-amber-400 to-amber-200 bg-clip-text text-transparent">
               {brandName}
             </span>
           </h1>
           <p className="mx-auto mt-4 max-w-2xl text-sm leading-relaxed text-zinc-400 sm:text-base">
             {isAr
-              ? 'انطلقت رحلتنا من إيمان راسخ بأن تجربة تناول الطعام ليست مجرد وجبة، بل لحظة بهجة تجمع الأحباب حول أطباق فاخرة محضرة بإتقان وشغف لا يهدأ.'
-              : 'Our journey began with a conviction that dining is never just a meal; it is a celebration that brings loved ones together over masterfully crafted gourmet dishes.'}
+              ? 'انطلقت قهوة كايرو برؤية تجمع بين سحر القهوة الشرقية الأصيلة وأرقى تقنيات القهوة المختصة، في مكان صُمم لراحتكم وهدوئكم على مدار 24 ساعة.'
+              : 'Qahwet Cairo blends authentic oriental coffee traditions with modern specialty brewing, inside a cozy haven open 24/7.'}
           </p>
         </div>
       </section>
@@ -101,8 +101,8 @@ export function AboutClient({ restaurantNameAr, restaurantNameEn }: AboutClientP
           {/* Visual Showcase */}
           <div className="relative aspect-4/3 overflow-hidden rounded-3xl border border-white/10 shadow-2xl">
             <Image
-              src="/storefront/images/slide/jay-wennington-N_Y88TWmGwA-unsplash.jpg"
-              alt={isAr ? 'أجواء مطعم ماسا' : 'MASA Restaurant Ambiance'}
+              src="/storefront/images/cafe/cozy-seating.jpg"
+              alt={isAr ? 'أجواء قهوة كايرو' : 'Qahwet Cairo Ambiance'}
               fill
               unoptimized
               className="object-cover"
@@ -111,13 +111,13 @@ export function AboutClient({ restaurantNameAr, restaurantNameEn }: AboutClientP
             <div className="absolute bottom-6 right-6 left-6 rounded-2xl border border-white/10 bg-zinc-950/80 p-4 backdrop-blur-md">
               <p className="text-xs font-bold text-white">
                 {isAr
-                  ? 'الفرع الرئيسي — المعادي، القاهرة'
-                  : 'Main Branch — Maadi, Cairo'}
+                  ? 'ستريب مول — العاشر من رمضان'
+                  : 'Strip Mall — 10th of Ramadan City'}
               </p>
-              <p className="text-3xs text-zinc-400 mt-0.5">
+              <p className="text-3xs text-amber-400 mt-0.5 font-medium">
                 {isAr
-                  ? 'أجواء استثنائية وإطلالة ساحرة على كورنيش النيل'
-                  : 'Exceptional ambiance with scenic Nile Corniche surroundings'}
+                  ? 'مفتوح 24 ساعة • جلسات مريحة وقهوة مختصة'
+                  : 'Open 24/7 • Cozy seating & specialty coffee'}
               </p>
             </div>
           </div>
@@ -125,32 +125,32 @@ export function AboutClient({ restaurantNameAr, restaurantNameEn }: AboutClientP
           {/* Text Content */}
           <div className="space-y-5">
             <div className="inline-flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-amber-500 font-mono">
-              <Utensils size={15} />
+              <Coffee size={15} />
               <span>
-                {isAr ? 'فلسفة المطبخ وأسرار النكهة' : 'Culinary Philosophy & Craft'}
+                {isAr ? 'فلسفة المكان وسر الفنجان' : 'Our Coffee Philosophy'}
               </span>
             </div>
             <h2 className="text-2xl font-black text-white sm:text-4xl leading-tight">
               {isAr
-                ? 'أفضل قطع اللحم الفاخر المشوية على أصولها'
-                : 'Artisan Grilled Prime Cuts & Fine Steaks'}
+                ? 'سحر الفنجان ودفء المكان في ستريب مول'
+                : 'Artisan Coffee & Cozy Comfort at Strip Mall'}
             </h2>
             <p className="text-sm leading-relaxed text-zinc-300">
               {isAr
-                ? `في ${brandName}، لا نساوم أبداً على الجودة. نقوم باستيراد أجود قطع لحم البلاك أنجوس المعتمدة ونتعامل مع مزارع محلية موثوقة لتوفير الخضراوات الطازجة صباح كل يوم.`
-                : `At ${brandName}, we never compromise on quality. We source certified Black Angus beef cuts and partner with trusted local growers to receive crisp, fresh produce every single morning.`}
+                ? `في ${brandName}، نؤمن بأن فنجان القهوة ليس مجرد مشروب، بل طقس يومي يعيد ضبط مزاجك ويمنحك لحظة صفاء تستحقها. اخترنا أن نكون في قلب العاشر من رمضان داخل ستريب مول لنقدم لكم بيئة عصرية بطابع مصري أصيل ومريح.`
+                : `At ${brandName}, we believe coffee is never just a drink; it is a restorative ritual. Nestled in Strip Mall, 10th of Ramadan City, we provide a warm space celebrating Egyptian hospitality and modern specialty brews.`}
             </p>
             <p className="text-sm leading-relaxed text-zinc-400">
               {isAr
-                ? 'يقوم طهاتنا بتعتيق اللحوم بطرق علمية دقيقة لتحقيق أقصى درجات الطراوة والنكهة المركزة، ثم نشويها على درجات حرارة متدرجة لضمان استواء مثالي يتناغم مع ذوقك الخاص.'
-                : 'Our pitmasters age our meats with precision to maximize tenderness and deep concentrated flavors, then sear them over living flame for that quintessential crust and perfect doneness.'}
+                ? 'من الإسبريسو واللاتيه الإسباني إلى القهوة التركية المحوجة والمشروبات المنعشة والحلويات الطازجة، نعتني بأدق تفاصيل التحضير لنضمن لك مذاقاً متقناً وأجواءً هادئة تناسب عملك أو لقاءاتك على مدار 24 ساعة.'
+                : 'From velvety Spanish lattes to authentic Turkish coffee and fresh bakery treats, we dial in every roast and extraction to deliver supreme flavor, whenever you visit.'}
             </p>
             <div className="pt-2">
               <Link
                 href="/menu"
-                className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-rose-600 to-amber-600 px-6 py-3 text-xs font-bold text-white shadow-md hover:opacity-95 transition"
+                className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-amber-600 to-amber-500 px-6 py-3 text-xs font-bold text-white shadow-md hover:opacity-95 transition"
               >
-                <span>{isAr ? 'تصفح قائمة الطعام واطلب الآن' : 'Explore Menu & Order Online'}</span>
+                <span>{isAr ? 'تصفح قائمة المشروبات والحلويات' : 'Explore Menu & Order Online'}</span>
                 <ArrowIcon size={16} />
               </Link>
             </div>
@@ -177,12 +177,12 @@ export function AboutClient({ restaurantNameAr, restaurantNameEn }: AboutClientP
       <section className="mx-auto max-w-7xl px-4 sm:px-6">
         <div className="text-center mb-10 space-y-2">
           <h2 className="text-2xl font-black text-white sm:text-3xl">
-            {isAr ? `ركائز الجودة في ${brandName}` : `Pillars of Excellence at ${brandName}`}
+            {isAr ? `ركائز التميز في ${brandName}` : `Why Guests Love ${brandName}`}
           </h2>
           <p className="text-xs text-zinc-400 max-w-xl mx-auto">
             {isAr
-              ? 'المعايير الصارمة التي نلتزم بها يومياً في كل طبق يُقدم لضيوفنا'
-              : 'The uncompromising standards we uphold daily in every dish delivered to our guests'}
+              ? 'معايير الاهتمام التي نحرص عليها لتقديم فنجان قهوة لا يُنسى وتجربة مريحة'
+              : 'Our unwavering dedication to crafting an exceptional cafe experience'}
           </p>
         </div>
         <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
@@ -208,26 +208,26 @@ export function AboutClient({ restaurantNameAr, restaurantNameEn }: AboutClientP
       <section className="mx-auto max-w-7xl px-4 sm:px-6">
         <div className="rounded-3xl border border-amber-500/30 bg-gradient-to-r from-zinc-900 via-zinc-950 to-zinc-900 p-8 sm:p-12 text-center">
           <h2 className="text-2xl font-black text-white sm:text-3xl">
-            {isAr ? 'جاهز لتجربة لا تُنسى؟' : 'Ready for an Exceptional Dining Experience?'}
+            {isAr ? 'جاهز لقعدة رايقة وفنجان قهوة مظبوط؟' : 'Ready for a Relaxing Cup of Coffee?'}
           </h2>
           <p className="mt-2 text-xs sm:text-sm text-zinc-400 max-w-lg mx-auto">
             {isAr
-              ? 'اطلب أطباقك المفضلة الآن واستمتع بالتوصيل الفوري الساخن حتى باب بيتك.'
-              : 'Order your favorite dishes online now and enjoy piping-hot delivery straight to your doorstep.'}
+              ? 'تفضل بزيارتنا في ستريب مول بالعاشر من رمضان على مدار 24 ساعة، أو اطلب مشروباتك المفضلة أونلاين.'
+              : 'Visit us anytime at Strip Mall, 10th of Ramadan City, or order your favorite coffee online.'}
           </p>
           <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
             <Link
               href="/menu"
-              className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-rose-600 to-amber-600 px-6 py-3 text-xs font-bold text-white shadow-md hover:opacity-95"
+              className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-amber-600 to-amber-500 px-6 py-3 text-xs font-bold text-white shadow-md hover:opacity-95"
             >
-              <Utensils size={15} />
-              <span>{isAr ? 'ابدأ طلبك الآن' : 'Order Now'}</span>
+              <Coffee size={15} />
+              <span>{isAr ? 'تصفح قائمة المشروبات' : 'View Menu'}</span>
             </Link>
             <Link
               href="/branches"
               className="inline-flex items-center gap-2 rounded-xl border border-white/15 bg-white/5 px-6 py-3 text-xs font-semibold text-zinc-200 hover:bg-white/10"
             >
-              <span>{isAr ? 'استكشف شبكة فروعنا' : 'Explore Branches'}</span>
+              <span>{isAr ? 'موقع الفرع في ستريب مول' : 'Find Our Location'}</span>
             </Link>
           </div>
         </div>

@@ -387,7 +387,7 @@ export function CheckoutClient({
 
             <div className="flex items-center gap-2 pt-1 text-3xs text-zinc-400 justify-center">
               <ShieldCheck className="h-3.5 w-3.5 text-emerald-500" />
-              <span>{isAr ? 'طلب مباشر وموثوق من مطعم ماسا' : 'Direct & Verified MASA Order'}</span>
+              <span>{isAr ? 'طلب مباشر وموثوق من قهوة كايرو' : 'Direct & Verified Order from Qahwet Cairo'}</span>
             </div>
           </div>
         </div>

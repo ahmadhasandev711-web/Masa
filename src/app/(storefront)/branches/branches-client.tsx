@@ -31,27 +31,21 @@ export function BranchesClient({
   const brandName = isAr ? restaurantNameAr : restaurantNameEn;
 
   const branchPhotos: Record<string, string> = {
-    'MAIN-01': '/storefront/images/header/briana-tozour-V_Nkf1E-vYA-unsplash.jpg',
-    'TAG-02': '/storefront/images/header/luisa-brimble-aFzg83dvnAI-unsplash.jpg',
-    'NASR-03': '/storefront/images/header/priscilla-du-preez-W3SEyZODn8U-unsplash.jpg',
+    'MAIN-01': '/storefront/images/cafe/terrace-ambiance.jpg',
+    'TAG-02': '/storefront/images/cafe/cozy-seating.jpg',
+    'NASR-03': '/storefront/images/cafe/cozy-corner.jpg',
   };
 
   const branchAddressesEn: Record<string, string> = {
-    'MAIN-01': 'Corniche El Nile, El Nasr St., Maadi, Cairo',
-    'TAG-02': 'North 90th Street, 5th Settlement, New Cairo',
-    'NASR-03': 'Abbas El Akkad St. & Tayaran St. Junction, Nasr City, Cairo',
+    'MAIN-01': 'Strip Mall, 10th of Ramadan City',
   };
 
   const branchFeaturesAr: Record<string, string[]> = {
-    'MAIN-01': ['إطلالة نيلية ساحرة', 'جلسات عائلية خاصة (VIP)', 'باركينج سيارات مجاني', 'متاح توصيل دليفري'],
-    'TAG-02': ['منطقة ألعاب أطفال مؤمنة', 'تراس خارجي مفتوح (Outdoor)', 'موقف سيارات واسع', 'متاح توصيل دليفري'],
-    'NASR-03': ['قريب من محاور المرور المركزية', 'صالة طعام مكيفة حديثة', 'خدمة استلام سيارات سريعة', 'متاح توصيل دليفري'],
+    'MAIN-01': ['مفتوح 24 ساعة يومياً', 'جلسات داخلية وخارجية مريحة (Indoor & Outdoor)', 'إنترنت سريع ومنافذ كهرباء للعمل', 'مواقف سيارات مجانية واسعة'],
   };
 
   const branchFeaturesEn: Record<string, string[]> = {
-    'MAIN-01': ['Scenic Nile View', 'VIP Private Family Lounges', 'Free Dedicated Parking', 'Fast Delivery Available'],
-    'TAG-02': ['Secured Kids Play Area', 'Open-Air Outdoor Terrace', 'Spacious Parking Lot', 'Fast Delivery Available'],
-    'NASR-03': ['Central Arterial Access', 'Modern Air-Conditioned Hall', 'Express Drive-Thru Pickup', 'Fast Delivery Available'],
+    'MAIN-01': ['Open 24/7 Round The Clock', 'Cozy Indoor & Outdoor Seating', 'High-Speed Wi-Fi & Power Outlets', 'Spacious Free Parking Lot'],
   };
 
   return (
@@ -62,19 +56,19 @@ export function BranchesClient({
           <div className="mx-auto mb-4 inline-flex items-center gap-2 rounded-full border border-amber-500/20 bg-amber-500/10 px-4 py-1.5 text-xs font-semibold text-amber-400">
             <Sparkles size={14} className="text-amber-500" />
             <span>
-              {isAr ? 'نحن في خدمتكم أينما كنتم في القاهرة' : 'Proudly Serving Across Greater Cairo'}
+              {isAr ? 'العاشر من رمضان - ستريب مول • مفتوح 24 ساعة' : '10th of Ramadan City - Strip Mall • Open 24/7'}
             </span>
           </div>
           <h1 className="text-3xl font-black tracking-tight text-white sm:text-5xl lg:text-6xl">
-            {isAr ? 'شبكة فروع مطعم ' : 'Branch Network — '}
-            <span className="bg-gradient-to-r from-rose-400 to-amber-400 bg-clip-text text-transparent">
+            {isAr ? 'موقع وفروع ' : 'Locations — '}
+            <span className="bg-gradient-to-r from-amber-400 to-amber-200 bg-clip-text text-transparent">
               {brandName}
             </span>
           </h1>
           <p className="mx-auto mt-4 max-w-2xl text-sm leading-relaxed text-zinc-400 sm:text-base">
             {isAr
-              ? 'يسعدنا استقبالكم في أرقى المواقع لتجربة ضيافة استثنائية، أو توصيل طلباتكم ساخنة وطازجة إلى باب بيتكم.'
-              : 'Experience our hospitality across prime locations, or enjoy fast, piping-hot delivery straight to your doorstep.'}
+              ? 'يسعدنا استقبالكم في ستريب مول بالعاشر من رمضان؛ أجواء راقية وجلسات مريحة وقهوة طازجة محضرة بإتقان على مدار 24 ساعة.'
+              : 'Welcome to Strip Mall, 10th of Ramadan City; cozy ambiance, relaxed seating, and fresh specialty coffee crafted 24/7.'}
           </p>
         </div>
       </section>
@@ -83,10 +77,10 @@ export function BranchesClient({
       <section className="mx-auto max-w-7xl px-4 sm:px-6">
         <div className="grid grid-cols-1 gap-8 lg:grid-cols-3">
           {branches.map((branch) => {
-            const photo = branchPhotos[branch.code] || '/storefront/images/header/rod-long-I79Pgmhmy5M-unsplash.jpg';
+            const photo = branchPhotos[branch.code] || '/storefront/images/cafe/terrace-ambiance.jpg';
             const features = isAr
-              ? branchFeaturesAr[branch.code] || ['جلسات عائلية', 'خدمة سريعة', 'توصيل دليفري']
-              : branchFeaturesEn[branch.code] || ['Family Seating', 'Quick Service', 'Express Delivery'];
+              ? branchFeaturesAr[branch.code] || ['مفتوح 24 ساعة', 'جلسات مريحة', 'خدمة سريعة']
+              : branchFeaturesEn[branch.code] || ['Open 24/7', 'Cozy Seating', 'Quick Service'];
             const address = isAr ? branch.address : branchAddressesEn[branch.code] || branch.address;
             const primaryName = isAr ? branch.nameAr : branch.nameEn;
             const secondaryName = isAr ? branch.nameEn : branch.nameAr;
@@ -103,22 +97,25 @@ export function BranchesClient({
                     alt={primaryName}
                     fill
                     unoptimized
-                    className="object-cover transition-transform duration-500 group-hover:scale-105"
+                    className="object-cover transition-transform duration-700 group-hover:scale-105"
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-zinc-950 via-zinc-950/20 to-transparent" />
-                  <div className={`absolute top-4 ${isAr ? 'right-4' : 'left-4'}`}>
-                    <span className="rounded-full bg-zinc-950/80 px-3 py-1 text-2xs font-mono font-bold text-amber-400 border border-white/10 backdrop-blur-md">
+                  <div className="absolute top-4 start-4">
+                    <span className="inline-flex items-center gap-1.5 rounded-full border border-amber-500/30 bg-black/60 px-3 py-1 text-2xs font-mono font-bold text-amber-400 backdrop-blur-md">
                       {branch.code}
                     </span>
-                  </div>
-                  <div className="absolute bottom-4 right-4 left-4">
-                    <h2 className="text-xl font-black text-white">{primaryName}</h2>
-                    <p className="text-2xs text-zinc-400 font-mono mt-0.5">{secondaryName}</p>
                   </div>
                 </div>
 
                 {/* Details Body */}
                 <div className="flex flex-1 flex-col justify-between p-6 space-y-6">
+                  <div>
+                    <h3 className="text-lg font-bold text-white group-hover:text-amber-400 transition-colors">
+                      {primaryName}
+                    </h3>
+                    <p className="text-2xs text-zinc-400 mt-0.5">{secondaryName}</p>
+                  </div>
+
                   {/* Address, Phone, Hours */}
                   <div className="space-y-3.5 text-xs text-zinc-300">
                     <div className="flex items-start gap-2.5">
@@ -141,10 +138,10 @@ export function BranchesClient({
 
                     <div className="flex items-center gap-2.5">
                       <Clock className="h-4 w-4 shrink-0 text-amber-500" strokeWidth={1.75} />
-                      <span>
+                      <span className="text-emerald-400 font-semibold">
                         {isAr
-                          ? 'يومياً: 12:00 ظهراً - 02:00 بعد منتصف الليل'
-                          : 'Daily: 12:00 PM - 02:00 AM'}
+                          ? 'مفتوح 24 ساعة يومياً (طوال أيام الأسبوع)'
+                          : 'Open 24/7 Daily (Round The Clock)'}
                       </span>
                     </div>
                   </div>
