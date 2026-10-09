@@ -14,16 +14,24 @@ import {
 import { useCart } from '../cart-context';
 import { placeOnlineOrderAction } from '../../actions/order.actions';
 
+export interface BranchOption {
+  id: string;
+  nameAr: string;
+  nameEn: string;
+}
+
 interface CheckoutClientProps {
   deliveryFeeMinor: number;
   taxRatePercent: number;
   currencySymbol: string;
+  branches?: BranchOption[];
 }
 
 export function CheckoutClient({
   deliveryFeeMinor,
   taxRatePercent,
   currencySymbol,
+  branches = [],
 }: CheckoutClientProps) {
   const router = useRouter();
   const { items, subtotalMinor, clearCart, locale } = useCart();
@@ -33,6 +41,7 @@ export function CheckoutClient({
   const [error, setError] = useState<string | null>(null);
 
   // Form State
+  const [selectedBranchId, setSelectedBranchId] = useState<string>(branches[0]?.id || '');
   const [customerName, setCustomerName] = useState('');
   const [customerPhone, setCustomerPhone] = useState('');
   const [customerEmail, setCustomerEmail] = useState('');
@@ -68,6 +77,7 @@ export function CheckoutClient({
 
     try {
       const orderPayload = {
+        branchId: selectedBranchId || undefined,
         customerName,
         customerPhone,
         customerEmail: customerEmail || undefined,
@@ -197,6 +207,25 @@ export function CheckoutClient({
                 className="mt-1.5 w-full rounded-xl border border-white/10 bg-zinc-950/80 px-3.5 py-2.5 text-xs font-mono text-white placeholder:text-zinc-600 focus:border-rose-500 focus:outline-hidden"
               />
             </div>
+
+            {branches.length > 1 && (
+              <div>
+                <label className="block text-2xs font-semibold text-zinc-300">
+                  {isAr ? 'فرع تجهيز الطلب والتوصيل *' : 'Fulfillment Branch *'}
+                </label>
+                <select
+                  value={selectedBranchId}
+                  onChange={(e) => setSelectedBranchId(e.target.value)}
+                  className="mt-1.5 w-full rounded-xl border border-white/10 bg-zinc-950/80 px-3.5 py-2.5 text-xs text-white focus:border-rose-500 focus:outline-hidden"
+                >
+                  {branches.map((b) => (
+                    <option key={b.id} value={b.id} className="bg-zinc-900 text-white">
+                      {isAr ? b.nameAr : b.nameEn}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
           </div>
 
           {/* 2. Delivery Address */}

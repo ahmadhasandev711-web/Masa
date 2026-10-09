@@ -20,10 +20,13 @@ export class UpdateOrderStatusUseCase {
       select: {
         id: true,
         orderNumber: true,
+        type: true,
         status: true,
         branchId: true,
         paymentMethod: true,
         paymentStatus: true,
+        totalMinor: true,
+        customerId: true,
       },
     });
 
@@ -39,6 +42,7 @@ export class UpdateOrderStatusUseCase {
       nextStatus: targetStatus,
       branchId: order.branchId,
       cancelReason: validated.cancelReason,
+      orderType: order.type,
     });
 
     const updateData: {
@@ -58,9 +62,9 @@ export class UpdateOrderStatusUseCase {
       updateData.cancelReason = validated.cancelReason?.trim() || null;
     }
 
-    // Cash On Delivery auto-marking to PAID upon successful delivery
+    // Auto-marking to PAID upon successful delivery or counter completion
     if (
-      targetStatus === OrderStatus.DELIVERED &&
+      (targetStatus === OrderStatus.DELIVERED || targetStatus === OrderStatus.COMPLETED) &&
       order.paymentMethod === PaymentMethod.CASH &&
       order.paymentStatus === PaymentStatus.PENDING
     ) {
@@ -97,6 +101,22 @@ export class UpdateOrderStatusUseCase {
         InventoryMovementType.SALE_ONLINE,
         validated.userId
       );
+    }
+
+    // Deduct Customer Lifetime Value (LTV) if order is cancelled or rejected to prevent stats inflation
+    if (
+      (targetStatus === OrderStatus.CANCELLED || targetStatus === OrderStatus.REJECTED) &&
+      currentStatus !== OrderStatus.CANCELLED &&
+      currentStatus !== OrderStatus.REJECTED &&
+      order.customerId
+    ) {
+      await prisma.customer.update({
+        where: { id: order.customerId },
+        data: {
+          totalOrders: { decrement: 1 },
+          totalSpent: { decrement: order.totalMinor },
+        },
+      });
     }
 
     return {

@@ -19,7 +19,7 @@ import { PosReceipt } from '../../../domain/pos/contracts/pos.repository';
 import { Money } from '../../../domain/shared/value-objects/money';
 import { TableStatus } from '../../../domain/tables/enums';
 import { OrderType, OrderStatus } from '../../../domain/ordering/enums';
-import { listOrdersAction } from '../../actions/order.actions';
+import { listOrdersAction, updateOrderStatusAction } from '../../actions/order.actions';
 import { PosCatalog } from './pos-catalog';
 import { ProductPicker } from './product-picker';
 import { CartLines, CartTypeSelector, CartOptions, CartTotals } from './pos-cart';
@@ -45,11 +45,24 @@ export interface ReadyOrderSummary {
 
 function ReadyOrdersModal({
   orders,
+  onCompleteOrder,
   onClose,
 }: {
   orders: ReadyOrderSummary[];
+  onCompleteOrder: (orderId: string) => Promise<void>;
   onClose: () => void;
 }) {
+  const [completingId, setCompletingId] = useState<string | null>(null);
+
+  const handleComplete = async (orderId: string) => {
+    setCompletingId(orderId);
+    try {
+      await onCompleteOrder(orderId);
+    } finally {
+      setCompletingId(null);
+    }
+  };
+
   return (
     <PosModal title="طلبات تم تجهيزها في المطبخ (جاهزة للاستلام والتقديم)" onClose={onClose}>
       {!orders.length ? (
@@ -80,9 +93,16 @@ function ReadyOrdersModal({
                   </p>
                 )}
               </div>
-              <div className="flex items-center gap-1.5 text-xs font-bold text-emerald-700 bg-emerald-100/70 px-2.5 py-1 rounded-lg">
-                <CheckCircle2 size={14} />
-                <span>جاهز للتسليم</span>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => handleComplete(order.id)}
+                  disabled={completingId === order.id}
+                  className="flex items-center gap-1.5 text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-700 px-3 py-1.5 rounded-lg transition shadow-xs disabled:opacity-50"
+                >
+                  <CheckCircle2 size={14} />
+                  <span>{completingId === order.id ? 'جاري التسليم...' : 'تسليم للزبون'}</span>
+                </button>
               </div>
             </div>
           ))}
@@ -942,6 +962,14 @@ export function PosClient(props: PosClientProps) {
       {showReadyOrders && (
         <ReadyOrdersModal
           orders={readyOrders}
+          onCompleteOrder={async (orderId) => {
+            const res = await updateOrderStatusAction({ orderId, nextStatus: OrderStatus.COMPLETED });
+            if (res.success) {
+              setReadyOrders((prev) => prev.filter((o) => o.id !== orderId));
+            } else {
+              alert(res.error || 'تعذر إتمام الطلب');
+            }
+          }}
           onClose={() => setShowReadyOrders(false)}
         />
       )}

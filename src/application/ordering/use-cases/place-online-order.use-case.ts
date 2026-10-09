@@ -67,7 +67,7 @@ export class PlaceOnlineOrderUseCase {
             include: {
               group: {
                 include: {
-                  modifiers: { where: { id: { in: itemInput.modifierIds } } },
+                  modifiers: { where: { isActive: true } },
                 },
               },
             },
@@ -84,14 +84,28 @@ export class PlaceOnlineOrderUseCase {
         throw new ValidationError(`المقاس المختار غير متوفر للصنف: ${product.nameAr}`);
       }
 
-      // Collect valid selected modifiers
+      // Collect valid selected modifiers & enforce minSelect / maxSelect
       const selectedModifiers = [];
       for (const pmg of product.modifierGroups) {
-        for (const mod of pmg.group.modifiers) {
-          if (itemInput.modifierIds.includes(mod.id)) {
-            selectedModifiers.push(mod);
-          }
+        if (!pmg.group.isActive) continue;
+
+        const chosenInThisGroup = pmg.group.modifiers.filter((mod) =>
+          itemInput.modifierIds.includes(mod.id)
+        );
+
+        if (chosenInThisGroup.length < pmg.group.minSelect) {
+          throw new ValidationError(
+            `يجب اختيار ${pmg.group.minSelect} على الأقل من مجموعة: ${pmg.group.nameAr}`
+          );
         }
+
+        if (chosenInThisGroup.length > pmg.group.maxSelect) {
+          throw new ValidationError(
+            `الحد الأقصى للاختيار من مجموعة ${pmg.group.nameAr} هو ${pmg.group.maxSelect}`
+          );
+        }
+
+        selectedModifiers.push(...chosenInThisGroup);
       }
 
       const unitPrice = Money.fromMinor(size.price, currency);
@@ -157,11 +171,24 @@ export class PlaceOnlineOrderUseCase {
         // 4. Generate sequential daily order number: WEB-YYYYMMDD-NNN (atomic inside tx)
         const orderNumber = await generateDailyWebOrderNumber(tx);
 
+        let branchId = validated.branchId ?? null;
+        if (!branchId) {
+          const defaultBranch = await tx.branch.findFirst({
+            where: { isActive: true },
+            orderBy: { createdAt: 'asc' },
+            select: { id: true },
+          });
+          if (defaultBranch) {
+            branchId = defaultBranch.id;
+          }
+        }
+
         const createdOrder = await tx.order.create({
           data: {
             orderNumber,
             onlineIdempotencyKey: validated.idempotencyKey || null,
             customerId: customerResult.customer.id,
+            branchId,
             source: OrderSource.ONLINE,
             type: OrderType.DELIVERY,
             status: OrderStatus.PENDING,
@@ -210,7 +237,7 @@ export class PlaceOnlineOrderUseCase {
           },
         });
 
-        // Update customer stats atomically
+        // Update customer recent activity and order totals
         await tx.customer.update({
           where: { id: customerResult.customer.id },
           data: {

@@ -137,7 +137,7 @@ export function OrderDetailModal({
   const formatMoney = (minor: number) => (minor / 100).toFixed(2);
   const currentStatus = order.status as OrderStatus;
   const isTerminal = OrderStateMachineService.isTerminalStatus(currentStatus);
-  const allowedTransitions = OrderStateMachineService.getAllowedTransitions(currentStatus);
+  const allowedTransitions = OrderStateMachineService.getAllowedTransitions(currentStatus, order.type);
 
   const getStatusBadge = (status: string) => {
     switch (status) {
@@ -296,6 +296,19 @@ export function OrderDetailModal({
           >
             <Truck className="w-4 h-4" />
             <span>تسليم للمندوب (في الطريق)</span>
+          </button>
+        );
+      case OrderStatus.COMPLETED:
+        return (
+          <button
+            key={targetStatus}
+            type="button"
+            onClick={() => handleStatusTransitionClick(targetStatus)}
+            disabled={isUpdatingStatus}
+            className="flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold rounded-lg bg-emerald-600 text-white hover:bg-emerald-700 transition shadow-xs"
+          >
+            <CheckCheck className="w-4 h-4" />
+            <span>تسليم للزبون (إتمام الطلب)</span>
           </button>
         );
       case OrderStatus.DELIVERED:

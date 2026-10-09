@@ -104,6 +104,19 @@ function ProductModal({ product, currencySymbol, isAr, onClose, onAdd }: Product
   const modifiersTotal = selectedModifiers.reduce((acc, m) => acc + m.priceDelta, 0);
   const totalMinor = ((selectedSize?.price ?? 0) + modifiersTotal) * quantity;
 
+  const missingRequiredGroup = useMemo(() => {
+    if (!product.modifierGroups?.length) return null;
+    for (const { group } of product.modifierGroups) {
+      if (group.minSelect > 0) {
+        const count = selectedModifiers.filter((m) => group.modifiers.some((gm) => gm.id === m.id)).length;
+        if (count < group.minSelect) {
+          return group;
+        }
+      }
+    }
+    return null;
+  }, [product.modifierGroups, selectedModifiers]);
+
   const handleToggleModifier = (mod: ModifierItem, group: ModifierGroupItem) => {
     const isSelected = selectedModifiers.some((m) => m.id === mod.id);
     if (isSelected) {
@@ -297,12 +310,20 @@ function ProductModal({ product, currencySymbol, isAr, onClose, onAdd }: Product
             </div>
           </div>
 
+          {missingRequiredGroup && (
+            <p className="text-2xs text-amber-400 font-medium text-center">
+              {isAr
+                ? `يرجى اختيار ${missingRequiredGroup.minSelect} على الأقل من: ${missingRequiredGroup.nameAr}`
+                : `Please select at least ${missingRequiredGroup.minSelect} from: ${missingRequiredGroup.nameEn}`}
+            </p>
+          )}
+
           {/* Add to cart button */}
           <button
             type="button"
             onClick={() => onAdd(selectedSizeId, selectedModifiers, quantity)}
-            disabled={!selectedSize}
-            className="w-full flex items-center justify-between rounded-2xl bg-gradient-to-r from-amber-600 to-amber-500 px-5 py-3.5 text-white shadow-lg hover:opacity-95 transition-opacity disabled:opacity-50"
+            disabled={!selectedSize || Boolean(missingRequiredGroup)}
+            className="w-full flex items-center justify-between rounded-2xl bg-gradient-to-r from-amber-600 to-amber-500 px-5 py-3.5 text-white shadow-lg hover:opacity-95 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <div className="flex items-center gap-2.5">
               <ShoppingCart className="h-5 w-5" />

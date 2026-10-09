@@ -94,10 +94,30 @@ export class SettleDriverCashUseCase {
         },
       });
 
-      // 2. Link settled orders
+      // 2. Link settled orders & generate OrderPayment records for settled COD
+      for (const order of deliveredOrders) {
+        if (order.paymentMethod === 'CASH') {
+          const existingPayment = await tx.orderPayment.findFirst({
+            where: { orderId: order.id, method: 'CASH' },
+          });
+          if (!existingPayment) {
+            await tx.orderPayment.create({
+              data: {
+                orderId: order.id,
+                method: 'CASH',
+                amountMinor: order.totalMinor,
+              },
+            });
+          }
+        }
+      }
+
       await tx.order.updateMany({
         where: { id: { in: calculation.orderIds } },
-        data: { driverSettlementId: settlement.id },
+        data: {
+          driverSettlementId: settlement.id,
+          cashierId: cashier.id,
+        },
       });
 
       // 3. Financial Bridge: Create CASH_IN CashShiftMovement if cash was collected

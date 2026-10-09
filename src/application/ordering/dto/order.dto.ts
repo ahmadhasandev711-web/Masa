@@ -8,6 +8,7 @@ export const placeOnlineOrderItemSchema = z.object({
 });
 
 export const placeOnlineOrderSchema = z.object({
+  branchId: z.string().uuid().nullable().optional(),
   customerName: z.string().min(2, 'اسم العميل يجب ألا يقل عن حرفين'),
   customerPhone: z.string().min(5, 'رقم الهاتف مطلوب'),
   customerEmail: z.string().email().nullable().optional().or(z.literal('')),

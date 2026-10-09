@@ -528,6 +528,13 @@ export class PrismaInventoryRepository {
             createdById: userId ?? null,
           },
         });
+
+        await tx.inventoryItem.update({
+          where: { id: item.inventoryItemId },
+          data: {
+            defaultCostMinor: item.unitCostMinor,
+          },
+        });
       }
 
       return {

@@ -1,6 +1,7 @@
 import { prisma } from '../../../infrastructure/db/prisma';
 import { OrderSource, OrderStatus } from '../../../domain/ordering/enums';
 import { Prisma } from '@prisma/client';
+import { getCairoTodayRange } from '../../../domain/shared/utils/date-range';
 
 export class GetOrdersMetricsUseCase {
   public async execute(branchId?: string) {
@@ -12,8 +13,7 @@ export class GetOrdersMetricsUseCase {
         : {};
 
     branchFilter.source = OrderSource.ONLINE;
-    const startOfToday = new Date();
-    startOfToday.setHours(0, 0, 0, 0);
+    const { startOfToday, endOfToday } = getCairoTodayRange();
 
     const [pendingCount, preparingCount, inDeliveryCount, deliveredTodayCount, todaySalesAggregate] =
       await Promise.all([
@@ -39,14 +39,14 @@ export class GetOrdersMetricsUseCase {
           where: {
             ...branchFilter,
             status: OrderStatus.DELIVERED,
-            createdAt: { gte: startOfToday },
+            createdAt: { gte: startOfToday, lte: endOfToday },
           },
         }),
         prisma.order.aggregate({
           where: {
             ...branchFilter,
             status: OrderStatus.DELIVERED,
-            createdAt: { gte: startOfToday },
+            createdAt: { gte: startOfToday, lte: endOfToday },
           },
           _sum: {
             totalMinor: true,

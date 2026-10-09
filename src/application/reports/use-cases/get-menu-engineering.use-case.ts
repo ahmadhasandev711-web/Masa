@@ -55,8 +55,9 @@ export class GetMenuEngineeringUseCase {
             lte: filter.endDate,
           },
           status: {
-            notIn: ['CANCELLED', 'REJECTED'],
+            notIn: ['CANCELLED', 'REJECTED', 'PENDING'],
           },
+          isTabOpen: false,
           ...(filter.branchId ? { branchId: filter.branchId } : {}),
         },
       },

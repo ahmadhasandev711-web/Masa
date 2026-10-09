@@ -7,6 +7,7 @@ export interface TransitionValidationParams {
   branchId?: string | null;
   cancelReason?: string | null;
   driverId?: string | null;
+  orderType?: string | null;
 }
 
 export class OrderStateMachineService {
@@ -18,7 +19,7 @@ export class OrderStateMachineService {
     [OrderStatus.PENDING]: [OrderStatus.CONFIRMED, OrderStatus.CANCELLED, OrderStatus.REJECTED],
     [OrderStatus.CONFIRMED]: [OrderStatus.PREPARING, OrderStatus.CANCELLED],
     [OrderStatus.PREPARING]: [OrderStatus.READY_FOR_PICKUP, OrderStatus.CANCELLED],
-    [OrderStatus.READY_FOR_PICKUP]: [OrderStatus.OUT_FOR_DELIVERY, OrderStatus.CANCELLED],
+    [OrderStatus.READY_FOR_PICKUP]: [OrderStatus.OUT_FOR_DELIVERY, OrderStatus.COMPLETED, OrderStatus.CANCELLED],
     [OrderStatus.OUT_FOR_DELIVERY]: [OrderStatus.DELIVERED, OrderStatus.CANCELLED],
     [OrderStatus.DELIVERED]: [],
     [OrderStatus.CANCELLED]: [],
@@ -26,10 +27,19 @@ export class OrderStateMachineService {
   };
 
   /**
-   * Returns list of allowed next statuses from current status.
+   * Returns list of allowed next statuses from current status, optionally filtered by order type.
    */
-  public static getAllowedTransitions(currentStatus: OrderStatus): readonly OrderStatus[] {
-    return this.VALID_TRANSITIONS[currentStatus] ?? [];
+  public static getAllowedTransitions(currentStatus: OrderStatus, orderType?: string | null): readonly OrderStatus[] {
+    const transitions = this.VALID_TRANSITIONS[currentStatus] ?? [];
+    if (currentStatus === OrderStatus.READY_FOR_PICKUP && orderType) {
+      if (orderType === 'DELIVERY') {
+        return transitions.filter((s) => s !== OrderStatus.COMPLETED);
+      }
+      if (orderType === 'TAKEAWAY' || orderType === 'DINE_IN') {
+        return transitions.filter((s) => s !== OrderStatus.OUT_FOR_DELIVERY);
+      }
+    }
+    return transitions;
   }
 
   /**
@@ -84,6 +94,22 @@ export class OrderStateMachineService {
       return {
         allowed: false,
         reason: 'يجب توضيح سبب الإلغاء أو الرفض للتوثيق والتدقيق',
+      };
+    }
+
+    // Business rule: Moving to OUT_FOR_DELIVERY is only allowed for DELIVERY orders
+    if (nextStatus === OrderStatus.OUT_FOR_DELIVERY && params.orderType && params.orderType !== 'DELIVERY') {
+      return {
+        allowed: false,
+        reason: 'لا يمكن إسناد طلب سفري أو صالة لمندوب توصيل؛ الإسناد متاح فقط لطلبات التوصيل',
+      };
+    }
+
+    // Business rule: Moving to COMPLETED from READY_FOR_PICKUP is for non-delivery or counter pickup
+    if (currentStatus === OrderStatus.READY_FOR_PICKUP && nextStatus === OrderStatus.COMPLETED && params.orderType === 'DELIVERY') {
+      return {
+        allowed: false,
+        reason: 'طلبات التوصيل يجب إسنادها لمندوب توصيل والتسليم عبره (DELIVERED)',
       };
     }
 

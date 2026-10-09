@@ -47,7 +47,8 @@ export class GetBranchPerformanceUseCase {
           where: {
             branchId: branch.id,
             createdAt: { gte: filter.startDate, lte: filter.endDate },
-            status: { notIn: ['CANCELLED', 'REJECTED'] },
+            status: { notIn: ['CANCELLED', 'REJECTED', 'PENDING'] },
+            isTabOpen: false,
           },
           _count: { id: true },
           _sum: { totalMinor: true },
