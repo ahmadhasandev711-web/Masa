@@ -47,10 +47,15 @@ export const branchAvailabilitySchema = z.object({
   isAvailable: z.boolean(),
 });
 
+export const deleteCatalogItemSchema = z.object({
+  id: z.string().trim().min(1, 'المعرف مطلوب'),
+});
+
 export type CategoryInput = z.infer<typeof categorySchema>;
 export type ProductInput = z.infer<typeof productSchema>;
 export type ModifierGroupInput = z.infer<typeof modifierGroupSchema>;
 export type BranchAvailabilityInput = z.infer<typeof branchAvailabilitySchema>;
+export type DeleteCatalogItemInput = z.infer<typeof deleteCatalogItemSchema>;
 
 export function toMinorUnits(amount: string): number {
   const [whole, fraction = ''] = amount.split('.');
@@ -58,3 +63,4 @@ export function toMinorUnits(amount: string): number {
   if (!Number.isSafeInteger(minorUnits)) throw new Error('المبلغ أكبر من النطاق المدعوم');
   return minorUnits;
 }
+

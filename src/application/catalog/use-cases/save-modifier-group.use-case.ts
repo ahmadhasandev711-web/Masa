@@ -5,24 +5,42 @@ export class SaveModifierGroupUseCase {
   public async execute(input: ModifierGroupInput) {
     const value = modifierGroupSchema.parse(input);
     const { modifiers, ...fields } = value;
-    const data = {
+    const baseData = {
       nameAr: fields.nameAr,
       nameEn: fields.nameEn,
       minSelect: fields.minSelect,
       maxSelect: fields.maxSelect,
-      modifiers: {
-        deleteMany: {},
-        create: modifiers.map((modifier, sortOrder) => ({
-          nameAr: modifier.nameAr,
-          nameEn: modifier.nameEn,
-          priceDelta: toMinorUnits(modifier.price),
-          sortOrder,
-        })),
-      },
     };
 
-    return fields.id
-      ? prisma.modifierGroup.update({ where: { id: fields.id }, data, include: { modifiers: true } })
-      : prisma.modifierGroup.create({ data, include: { modifiers: true } });
+    const modifiersCreate = modifiers.map((modifier, sortOrder) => ({
+      nameAr: modifier.nameAr,
+      nameEn: modifier.nameEn,
+      priceDelta: toMinorUnits(modifier.price),
+      sortOrder,
+    }));
+
+    if (fields.id) {
+      return prisma.modifierGroup.update({
+        where: { id: fields.id },
+        data: {
+          ...baseData,
+          modifiers: {
+            deleteMany: {},
+            create: modifiersCreate,
+          },
+        },
+        include: { modifiers: true },
+      });
+    }
+
+    return prisma.modifierGroup.create({
+      data: {
+        ...baseData,
+        modifiers: {
+          create: modifiersCreate,
+        },
+      },
+      include: { modifiers: true },
+    });
   }
 }

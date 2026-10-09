@@ -12,6 +12,9 @@ import { CategoryInput, ProductInput, ModifierGroupInput, BranchAvailabilityInpu
 import { SaveCategoryUseCase } from '../../application/catalog/use-cases/save-category.use-case';
 import { SaveProductUseCase } from '../../application/catalog/use-cases/save-product.use-case';
 import { SaveModifierGroupUseCase } from '../../application/catalog/use-cases/save-modifier-group.use-case';
+import { DeleteProductUseCase } from '../../application/catalog/use-cases/delete-product.use-case';
+import { DeleteCategoryUseCase } from '../../application/catalog/use-cases/delete-category.use-case';
+import { DeleteModifierGroupUseCase } from '../../application/catalog/use-cases/delete-modifier-group.use-case';
 import { SetBranchAvailabilityUseCase } from '../../application/catalog/use-cases/set-branch-availability.use-case';
 import { SetCatalogStatusUseCase } from '../../application/catalog/use-cases/set-catalog-status.use-case';
 import { CatalogResource } from '../../domain/catalog/enums/catalog-resource.enum';
@@ -127,4 +130,41 @@ export async function uploadProductImageAction(formData: FormData): Promise<Acti
     return toActionFailure(error);
   }
 }
+
+export async function deleteProductAction(productId: string): Promise<ActionResult<{ id: string }>> {
+  try {
+    await SessionService.requirePermission(PermissionCode.MANAGE_MENU);
+    const result = await new DeleteProductUseCase().execute({ id: productId });
+    revalidatePath('/admin/menu');
+    revalidatePath('/');
+    revalidatePath('/pos');
+    return { success: true, data: { id: result.id } };
+  } catch (error) {
+    return toActionFailure(error);
+  }
+}
+
+export async function deleteCategoryAction(categoryId: string): Promise<ActionResult<{ id: string }>> {
+  try {
+    await SessionService.requirePermission(PermissionCode.MANAGE_MENU);
+    const result = await new DeleteCategoryUseCase().execute({ id: categoryId });
+    revalidatePath('/admin/menu');
+    revalidatePath('/');
+    return { success: true, data: { id: result.id } };
+  } catch (error) {
+    return toActionFailure(error);
+  }
+}
+
+export async function deleteModifierGroupAction(groupId: string): Promise<ActionResult<{ id: string }>> {
+  try {
+    await SessionService.requirePermission(PermissionCode.MANAGE_MENU);
+    const result = await new DeleteModifierGroupUseCase().execute({ id: groupId });
+    revalidatePath('/admin/menu');
+    return { success: true, data: { id: result.id } };
+  } catch (error) {
+    return toActionFailure(error);
+  }
+}
+
 

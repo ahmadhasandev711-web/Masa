@@ -2,8 +2,8 @@
 
 import { useMemo, useState } from 'react';
 import Image from 'next/image';
-import { Archive, Check, ChevronDown, CirclePlus, FolderOpen, Layers3, Pencil, Plus, QrCode, Search, Sparkles, Utensils, X } from 'lucide-react';
-import { saveCategoryAction, saveModifierGroupAction, saveProductAction, setBranchAvailabilityAction, setCatalogStatusAction, toggleProductFeaturedAction } from '../../../actions/catalog.actions';
+import { Archive, Check, ChevronDown, CirclePlus, FolderOpen, Layers3, Pencil, Plus, QrCode, Search, Sparkles, Trash2, Utensils, X } from 'lucide-react';
+import { deleteCategoryAction, deleteModifierGroupAction, deleteProductAction, saveCategoryAction, saveModifierGroupAction, saveProductAction, setBranchAvailabilityAction, setCatalogStatusAction, toggleProductFeaturedAction } from '../../../actions/catalog.actions';
 import { CatalogResource } from '../../../../domain/catalog/enums/catalog-resource.enum';
 import { ProductImagePicker } from './product-image-picker';
 import { MenuQrModal } from './menu-qr-modal';
@@ -23,6 +23,7 @@ type CatalogProps = { categories: Category[]; products: Product[]; modifierGroup
 type Tab = 'products' | 'categories' | 'modifiers';
 type DraftSize = { nameAr: string; nameEn: string; price: string };
 type DraftModifier = { nameAr: string; nameEn: string; price: string };
+type DeleteTarget = { type: 'product' | 'category' | 'modifier'; id: string; name: string };
 
 const inputClass = 'min-h-12 w-full rounded-xl border border-zinc-300 bg-white px-3.5 text-base text-zinc-900 outline-none placeholder:text-zinc-400 focus:border-zinc-900 focus:ring-2 focus:ring-zinc-900/10';
 const labelClass = 'block space-y-1.5 text-sm font-medium text-zinc-700';
@@ -46,6 +47,8 @@ export function MenuManager({ categories: initialCategories, products: initialPr
   const [error, setError] = useState('');
   const [pending, setPending] = useState(false);
   const [branchId, setBranchId] = useState(branches[0]?.id ?? '');
+  const [deleteTarget, setDeleteTarget] = useState<DeleteTarget | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
   const visibleProducts = useMemo(() => products.filter((product) =>
     `${product.nameAr} ${product.nameEn} ${product.category.nameAr}`.toLowerCase().includes(query.toLowerCase())
   ), [products, query]);
@@ -53,6 +56,32 @@ export function MenuManager({ categories: initialCategories, products: initialPr
   const openNew = (type: Tab) => { setEditingId(null); setError(''); setModal(type); };
   const openEdit = (type: Tab, id: string) => { setEditingId(id); setError(''); setModal(type); };
   const close = () => { if (!pending) setModal(null); };
+
+  async function confirmDelete() {
+    if (!deleteTarget) return;
+    setIsDeleting(true);
+    setError('');
+    try {
+      let result: { success: boolean; error?: string };
+      if (deleteTarget.type === 'product') {
+        result = await deleteProductAction(deleteTarget.id);
+      } else if (deleteTarget.type === 'category') {
+        result = await deleteCategoryAction(deleteTarget.id);
+      } else {
+        result = await deleteModifierGroupAction(deleteTarget.id);
+      }
+      if (!result.success) {
+        setError(result.error ?? 'تعذر إتمام عملية الحذف');
+        setDeleteTarget(null);
+        return;
+      }
+      setDeleteTarget(null);
+      window.location.reload();
+    } finally {
+      setIsDeleting(false);
+    }
+  }
+
 
   async function saveCategory(formData: FormData) {
     setPending(true); setError('');
@@ -161,23 +190,30 @@ export function MenuManager({ categories: initialCategories, products: initialPr
         </div>
       </div>
 
-      {error && !modal && <p role="alert" className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">{error}</p>}
+      {error && !modal && (
+        <div role="alert" className="flex items-start justify-between gap-3 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
+          <p className="leading-relaxed flex-1">{error}</p>
+          <button type="button" onClick={() => setError('')} aria-label="إغلاق التنبيه" className="text-rose-500 hover:text-rose-800">
+            <X size={16} />
+          </button>
+        </div>
+      )}
 
       {tab === 'products' && <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">{visibleProducts.map((product) => {
         const availability = product.branchAvailability.find((item) => item.branchId === branchId)?.isAvailable ?? true;
         return <article key={product.id} className="overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-sm">
           <div className="flex gap-3 p-4 sm:p-5">
             <div className="grid size-14 shrink-0 place-items-center rounded-xl bg-zinc-100 text-zinc-500">{product.imageUrl ? <Image src={product.imageUrl} alt="" width={56} height={56} unoptimized className="size-14 rounded-xl object-cover" /> : <Utensils size={20} />}</div>
-            <div className="min-w-0 flex-1"><div className="flex items-start justify-between gap-2"><div><div className="flex items-center gap-1.5 flex-wrap"><p className={`font-semibold ${product.isActive ? 'text-zinc-950' : 'text-zinc-400'}`}>{product.nameAr}</p>{product.isFeatured && <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-bold text-amber-800"><Sparkles size={11} className="text-amber-600" />مميز بالسلايدر</span>}</div><p className="mt-0.5 text-xs text-zinc-500">{product.category.nameAr}{!product.isActive && ' · مؤرشف'}</p></div><div className="flex shrink-0 gap-1"><button aria-label={product.isFeatured ? 'إلغاء التمييز في السلايدر' : 'تمييز في السلايدر الرئيسي'} title={product.isFeatured ? 'معروض في السلايدر الرئيسي للموقع' : 'إضافة إلى السلايدر الرئيسي'} onClick={() => toggleFeatured(product.id)} className={`grid size-10 place-items-center rounded-xl border transition-colors ${product.isFeatured ? 'border-amber-400 bg-amber-50 text-amber-600 shadow-sm' : 'border-zinc-200 text-zinc-400 hover:bg-zinc-50 hover:text-zinc-700'}`}><Sparkles size={16} /></button><button aria-label={`تعديل ${product.nameAr}`} onClick={() => openEdit('products', product.id)} className="grid size-10 place-items-center rounded-xl border border-zinc-200 text-zinc-600 hover:bg-zinc-50"><Pencil size={16} /></button><button aria-label={product.isActive ? 'أرشفة الصنف' : 'إعادة تفعيل الصنف'} onClick={() => setActive(CatalogResource.PRODUCT, product.id, !product.isActive)} className="grid size-10 place-items-center rounded-xl border border-zinc-200 text-zinc-600 hover:bg-zinc-50"><Archive size={16} /></button></div></div><p className="mt-3 text-xs leading-5 text-zinc-500">{product.description || 'بدون وصف'}</p></div>
+            <div className="min-w-0 flex-1"><div className="flex items-start justify-between gap-2"><div><div className="flex items-center gap-1.5 flex-wrap"><p className={`font-semibold ${product.isActive ? 'text-zinc-950' : 'text-zinc-400'}`}>{product.nameAr}</p>{product.isFeatured && <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-bold text-amber-800"><Sparkles size={11} className="text-amber-600" />مميز بالسلايدر</span>}</div><p className="mt-0.5 text-xs text-zinc-500">{product.category.nameAr}{!product.isActive && ' · مؤرشف'}</p></div><div className="flex shrink-0 gap-1"><button aria-label={product.isFeatured ? 'إلغاء التمييز في السلايدر' : 'تمييز في السلايدر الرئيسي'} title={product.isFeatured ? 'معروض في السلايدر الرئيسي للموقع' : 'إضافة إلى السلايدر الرئيسي'} onClick={() => toggleFeatured(product.id)} className={`grid size-10 place-items-center rounded-xl border transition-colors ${product.isFeatured ? 'border-amber-400 bg-amber-50 text-amber-600 shadow-sm' : 'border-zinc-200 text-zinc-400 hover:bg-zinc-50 hover:text-zinc-700'}`}><Sparkles size={16} /></button><button aria-label={`تعديل ${product.nameAr}`} onClick={() => openEdit('products', product.id)} className="grid size-10 place-items-center rounded-xl border border-zinc-200 text-zinc-600 hover:bg-zinc-50"><Pencil size={16} /></button><button aria-label={product.isActive ? 'أرشفة الصنف' : 'إعادة تفعيل الصنف'} onClick={() => setActive(CatalogResource.PRODUCT, product.id, !product.isActive)} className="grid size-10 place-items-center rounded-xl border border-zinc-200 text-zinc-600 hover:bg-zinc-50"><Archive size={16} /></button><button aria-label={`حذف ${product.nameAr}`} title="حذف الصنف نهائياً" onClick={() => setDeleteTarget({ type: 'product', id: product.id, name: product.nameAr })} className="grid size-10 place-items-center rounded-xl border border-zinc-200 text-rose-600 hover:bg-rose-50 hover:border-rose-300 transition"><Trash2 size={16} /></button></div></div><p className="mt-3 text-xs leading-5 text-zinc-500">{product.description || 'بدون وصف'}</p></div>
           </div>
           <div className="flex flex-wrap gap-2 border-t border-zinc-100 px-4 py-3 sm:px-5">{product.sizes.map((size) => <span key={size.id} className="rounded-lg bg-zinc-100 px-2.5 py-1.5 text-xs text-zinc-700">{size.nameAr} · {money(size.price, currency)}</span>)}</div>
           <div className="flex items-center justify-between border-t border-zinc-100 px-4 py-3 sm:px-5"><span className="text-xs text-zinc-500">التوفر في {branches.find((branch) => branch.id === branchId)?.nameAr || 'الفرع'}</span><button disabled={!product.isActive || !branchId} onClick={() => setAvailability(product, !availability)} className={`min-h-10 rounded-lg px-3 text-xs font-semibold disabled:opacity-50 ${availability ? 'bg-emerald-50 text-emerald-700' : 'bg-zinc-100 text-zinc-600'}`}>{availability ? 'متاح' : 'غير متاح'}</button></div>
         </article>;
       })}{visibleProducts.length === 0 && <EmptyState title="لا توجد أصناف" description="ابدأ بإضافة أول صنف إلى المنيو." />}</div>}
 
-      {tab === 'categories' && <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">{categories.filter((item) => `${item.nameAr} ${item.nameEn}`.toLowerCase().includes(query.toLowerCase())).map((category) => <article key={category.id} className="flex items-center gap-3 rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm"><span className="grid size-11 shrink-0 place-items-center rounded-xl bg-zinc-100 text-zinc-600"><FolderOpen size={18} /></span><div className="min-w-0 flex-1"><h2 className={`truncate font-semibold ${category.isActive ? 'text-zinc-900' : 'text-zinc-400'}`}>{category.nameAr}</h2><p className="truncate text-xs text-zinc-500">{category.nameEn}{!category.isActive && ' · مؤرشف'}</p></div><button onClick={() => openEdit('categories', category.id)} aria-label={`تعديل ${category.nameAr}`} className="grid size-10 shrink-0 place-items-center rounded-xl border border-zinc-200 text-zinc-600"><Pencil size={16} /></button><button onClick={() => setActive(CatalogResource.CATEGORY, category.id, !category.isActive)} aria-label={category.isActive ? 'أرشفة التصنيف' : 'إعادة تفعيل التصنيف'} className="grid size-10 shrink-0 place-items-center rounded-xl border border-zinc-200 text-zinc-600"><Archive size={16} /></button></article>)}{categories.length === 0 && <EmptyState title="ابدأ بالتصنيفات" description="أنشئ تصنيفات مثل الوجبات والمشروبات لتنظيم الأصناف." />}</div>}
+      {tab === 'categories' && <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">{categories.filter((item) => `${item.nameAr} ${item.nameEn}`.toLowerCase().includes(query.toLowerCase())).map((category) => <article key={category.id} className="flex items-center gap-3 rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm"><span className="grid size-11 shrink-0 place-items-center rounded-xl bg-zinc-100 text-zinc-600"><FolderOpen size={18} /></span><div className="min-w-0 flex-1"><h2 className={`truncate font-semibold ${category.isActive ? 'text-zinc-900' : 'text-zinc-400'}`}>{category.nameAr}</h2><p className="truncate text-xs text-zinc-500">{category.nameEn}{!category.isActive && ' · مؤرشف'}</p></div><button onClick={() => openEdit('categories', category.id)} aria-label={`تعديل ${category.nameAr}`} className="grid size-10 shrink-0 place-items-center rounded-xl border border-zinc-200 text-zinc-600"><Pencil size={16} /></button><button onClick={() => setActive(CatalogResource.CATEGORY, category.id, !category.isActive)} aria-label={category.isActive ? 'أرشفة التصنيف' : 'إعادة تفعيل التصنيف'} className="grid size-10 shrink-0 place-items-center rounded-xl border border-zinc-200 text-zinc-600"><Archive size={16} /></button><button onClick={() => setDeleteTarget({ type: 'category', id: category.id, name: category.nameAr })} aria-label={`حذف ${category.nameAr}`} title="حذف التصنيف" className="grid size-10 shrink-0 place-items-center rounded-xl border border-zinc-200 text-rose-600 hover:bg-rose-50 hover:border-rose-300 transition"><Trash2 size={16} /></button></article>)}{categories.length === 0 && <EmptyState title="ابدأ بالتصنيفات" description="أنشئ تصنيفات مثل الوجبات والمشروبات لتنظيم الأصناف." />}</div>}
 
-      {tab === 'modifiers' && <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">{groups.filter((item) => `${item.nameAr} ${item.nameEn}`.toLowerCase().includes(query.toLowerCase())).map((group) => <article key={group.id} className="rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm sm:p-5"><div className="flex items-start justify-between gap-3"><div><h2 className="font-semibold text-zinc-950">{group.nameAr}</h2><p className="mt-1 text-xs text-zinc-500">اختيار {group.minSelect} إلى {group.maxSelect}</p></div><div className="flex gap-1"><button onClick={() => openEdit('modifiers', group.id)} aria-label={`تعديل ${group.nameAr}`} className="grid size-10 place-items-center rounded-xl border border-zinc-200 text-zinc-600"><Pencil size={16} /></button><button onClick={() => setActive(CatalogResource.MODIFIER_GROUP, group.id, false)} aria-label={`أرشفة ${group.nameAr}`} className="grid size-10 place-items-center rounded-xl border border-zinc-200 text-zinc-600"><Archive size={16} /></button></div></div><div className="mt-4 space-y-2">{group.modifiers.map((modifier) => <div key={modifier.id} className="flex items-center justify-between rounded-lg bg-zinc-50 px-3 py-2 text-sm"><span className="text-zinc-700">{modifier.nameAr}</span><span className="text-xs font-medium text-zinc-500">{modifier.priceDelta ? `+ ${money(modifier.priceDelta, currency)}` : 'بدون زيادة'}</span></div>)}</div></article>)}{groups.length === 0 && <EmptyState title="لا توجد إضافات بعد" description="أنشئ مجموعات للإضافات، مثل اختيار الصوص أو حجم المشروب." />}</div>}
+      {tab === 'modifiers' && <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">{groups.filter((item) => `${item.nameAr} ${item.nameEn}`.toLowerCase().includes(query.toLowerCase())).map((group) => <article key={group.id} className="rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm sm:p-5"><div className="flex items-start justify-between gap-3"><div><h2 className="font-semibold text-zinc-950">{group.nameAr}</h2><p className="mt-1 text-xs text-zinc-500">اختيار {group.minSelect} إلى {group.maxSelect}</p></div><div className="flex gap-1"><button onClick={() => openEdit('modifiers', group.id)} aria-label={`تعديل ${group.nameAr}`} className="grid size-10 place-items-center rounded-xl border border-zinc-200 text-zinc-600"><Pencil size={16} /></button><button onClick={() => setActive(CatalogResource.MODIFIER_GROUP, group.id, false)} aria-label={`أرشفة ${group.nameAr}`} className="grid size-10 place-items-center rounded-xl border border-zinc-200 text-zinc-600"><Archive size={16} /></button><button onClick={() => setDeleteTarget({ type: 'modifier', id: group.id, name: group.nameAr })} aria-label={`حذف ${group.nameAr}`} title="حذف المجموعة" className="grid size-10 place-items-center rounded-xl border border-zinc-200 text-rose-600 hover:bg-rose-50 hover:border-rose-300 transition"><Trash2 size={16} /></button></div></div><div className="mt-4 space-y-2">{group.modifiers.map((modifier) => <div key={modifier.id} className="flex items-center justify-between rounded-lg bg-zinc-50 px-3 py-2 text-sm"><span className="text-zinc-700">{modifier.nameAr}</span><span className="text-xs font-medium text-zinc-500">{modifier.priceDelta ? `+ ${money(modifier.priceDelta, currency)}` : 'بدون زيادة'}</span></div>)}</div></article>)}{groups.length === 0 && <EmptyState title="لا توجد إضافات بعد" description="أنشئ مجموعات للإضافات، مثل اختيار الصصوص أو حجم المشروب." />}</div>}
 
       {modal && <EditorModal title={editorTitle(modal, editingId)} onClose={close}>
         {error && <p role="alert" className="mb-4 rounded-xl border border-rose-200 bg-rose-50 px-3 py-2.5 text-sm text-rose-700">{error}</p>}
@@ -185,6 +221,45 @@ export function MenuManager({ categories: initialCategories, products: initialPr
         {modal === 'products' && <ProductEditor key={editingId ?? 'new'} product={products.find((item) => item.id === editingId)} categories={categories} groups={groups} onSave={saveProduct} onCancel={close} pending={pending} />}
         {modal === 'modifiers' && <GroupEditor key={editingId ?? 'new'} group={groups.find((item) => item.id === editingId)} onSave={saveGroup} onCancel={close} pending={pending} />}
       </EditorModal>}
+
+      {deleteTarget && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-zinc-950/50 backdrop-blur-xs p-4">
+          <div role="dialog" aria-modal="true" aria-labelledby="delete-dialog-title" className="w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl space-y-4">
+            <div className="flex items-center gap-3 text-rose-600">
+              <div className="grid size-10 place-items-center rounded-full bg-rose-50">
+                <Trash2 size={20} />
+              </div>
+              <h3 id="delete-dialog-title" className="text-lg font-bold text-zinc-950">
+                تأكيد الحذف
+              </h3>
+            </div>
+            <p className="text-sm text-zinc-600 leading-relaxed">
+              هل أنت متأكد من رغبتك في حذف <strong className="text-zinc-900 font-semibold">{deleteTarget.name}</strong>؟
+              {deleteTarget.type === 'product' && ' (إذا كان الصنف يحتوي على طلبات ومبيعات مسجلة في النظام، فلن يُسمح بحذفه لحماية السجلات المالية وسيتعين عليك أرشفته/إيقافه).'}
+              {deleteTarget.type === 'category' && ' (لن يُسمح بحذف التصنيف إذا كان يحتوي على أصناف بداخله).'}
+              {deleteTarget.type === 'modifier' && ' (لن يُسمح بحذف المجموعة إذا كانت مرتبطة بأصناف أو مستخدمة في طلبات سابقة).'}
+            </p>
+            <div className="flex items-center justify-end gap-2.5 pt-2">
+              <button
+                type="button"
+                disabled={isDeleting}
+                onClick={() => setDeleteTarget(null)}
+                className="min-h-11 rounded-xl border border-zinc-200 bg-white px-4 text-sm font-semibold text-zinc-700 hover:bg-zinc-50 transition disabled:opacity-50"
+              >
+                إلغاء
+              </button>
+              <button
+                type="button"
+                disabled={isDeleting}
+                onClick={confirmDelete}
+                className="min-h-11 rounded-xl bg-rose-600 px-5 text-sm font-semibold text-white hover:bg-rose-700 transition disabled:opacity-50"
+              >
+                {isDeleting ? 'جارٍ الحذف...' : 'تأكيد الحذف'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <MenuQrModal
         isOpen={isQrModalOpen}
