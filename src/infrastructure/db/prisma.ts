@@ -9,10 +9,10 @@ function createPrismaClient(): PrismaClient {
   const user = decodeURIComponent(url.username || 'root');
   const password = decodeURIComponent(url.password || '');
   const database = url.pathname.replace(/^\//, '');
+  const socketPath = url.searchParams.get('socket') || undefined;
 
   const adapter = new PrismaMariaDb({
-    host,
-    port,
+    ...(socketPath ? { socketPath } : { host, port }),
     user,
     password,
     database,

@@ -482,21 +482,18 @@ export function StaffClient({
                       <span>تعديل</span>
                     </button>
 
-                    {/* Temporarily hidden for demo security to prevent test accounts lockout */}
-                    {false && (
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setResettingPasswordStaff(user);
-                          setNewPassword('');
-                          setError(null);
-                        }}
-                        className="py-1.5 px-2 bg-zinc-50 hover:bg-zinc-100 text-zinc-700 rounded-lg font-bold flex items-center justify-center gap-1 border border-zinc-200"
-                      >
-                        <KeyRound className="size-3 text-zinc-500" />
-                        <span>كلمة السر</span>
-                      </button>
-                    )}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setResettingPasswordStaff(user);
+                        setNewPassword('');
+                        setError(null);
+                      }}
+                      className="py-1.5 px-2 bg-zinc-50 hover:bg-zinc-100 text-zinc-700 rounded-lg font-bold flex items-center justify-center gap-1 border border-zinc-200"
+                    >
+                      <KeyRound className="size-3 text-zinc-500" />
+                      <span>كلمة السر</span>
+                    </button>
 
                     <button
                       type="button"
@@ -600,21 +597,18 @@ export function StaffClient({
                             <Pencil className="size-3.5" />
                           </button>
 
-                          {/* Temporarily hidden for demo security to prevent test accounts lockout */}
-                          {false && (
-                            <button
-                              type="button"
-                              onClick={() => {
-                                setResettingPasswordStaff(user);
-                                setNewPassword('');
-                                setError(null);
-                              }}
-                              className="p-1.5 rounded-lg bg-zinc-100 hover:bg-zinc-200 text-zinc-700 font-bold transition"
-                              title="تغيير كلمة المرور"
-                            >
-                              <KeyRound className="size-3.5" />
-                            </button>
-                          )}
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setResettingPasswordStaff(user);
+                              setNewPassword('');
+                              setError(null);
+                            }}
+                            className="p-1.5 rounded-lg bg-zinc-100 hover:bg-zinc-200 text-zinc-700 font-bold transition"
+                            title="تغيير كلمة المرور"
+                          >
+                            <KeyRound className="size-3.5" />
+                          </button>
 
                           <button
                             type="button"

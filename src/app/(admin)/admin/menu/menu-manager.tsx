@@ -181,9 +181,9 @@ export function MenuManager({ categories: initialCategories, products: initialPr
 
       {modal && <EditorModal title={editorTitle(modal, editingId)} onClose={close}>
         {error && <p role="alert" className="mb-4 rounded-xl border border-rose-200 bg-rose-50 px-3 py-2.5 text-sm text-rose-700">{error}</p>}
-        {modal === 'categories' && <CategoryEditor key={editingId ?? 'new'} category={categories.find((item) => item.id === editingId)} onSave={saveCategory} pending={pending} />}
-        {modal === 'products' && <ProductEditor key={editingId ?? 'new'} product={products.find((item) => item.id === editingId)} categories={categories} groups={groups} onSave={saveProduct} pending={pending} />}
-        {modal === 'modifiers' && <GroupEditor key={editingId ?? 'new'} group={groups.find((item) => item.id === editingId)} onSave={saveGroup} pending={pending} />}
+        {modal === 'categories' && <CategoryEditor key={editingId ?? 'new'} category={categories.find((item) => item.id === editingId)} onSave={saveCategory} onCancel={close} pending={pending} />}
+        {modal === 'products' && <ProductEditor key={editingId ?? 'new'} product={products.find((item) => item.id === editingId)} categories={categories} groups={groups} onSave={saveProduct} onCancel={close} pending={pending} />}
+        {modal === 'modifiers' && <GroupEditor key={editingId ?? 'new'} group={groups.find((item) => item.id === editingId)} onSave={saveGroup} onCancel={close} pending={pending} />}
       </EditorModal>}
 
       <MenuQrModal
@@ -201,46 +201,172 @@ function Metric({ label, value }: { label: string; value: number }) { return <di
 
 function EmptyState({ title, description }: { title: string; description: string }) { return <div className="col-span-full rounded-2xl border border-dashed border-zinc-300 bg-white px-5 py-12 text-center"><Archive className="mx-auto text-zinc-400" size={24} /><h2 className="mt-3 font-semibold text-zinc-800">{title}</h2><p className="mt-1 text-sm text-zinc-500">{description}</p></div>; }
 
-function EditorModal({ title, onClose, children }: { title: string; onClose: () => void; children: React.ReactNode }) { return <div className="fixed inset-0 z-50 flex items-end justify-center bg-zinc-950/40 p-0 sm:items-center sm:p-4" onMouseDown={(event) => { if (event.target === event.currentTarget) onClose(); }}><section role="dialog" aria-modal="true" aria-label={title} className="max-h-[92dvh] w-full overflow-y-auto rounded-t-3xl bg-white p-4 shadow-2xl sm:max-w-2xl sm:rounded-3xl sm:p-6"><header className="sticky top-0 z-10 -mx-4 -mt-4 mb-5 flex items-center justify-between border-b border-zinc-100 bg-white px-4 py-4 sm:-mx-6 sm:-mt-6 sm:px-6"><h2 className="text-lg font-bold text-zinc-950">{title}</h2><button onClick={onClose} aria-label="إغلاق" className="grid size-10 place-items-center rounded-xl bg-zinc-100 text-zinc-600"><X size={18} /></button></header>{children}</section></div>; }
+function EditorModal({ title, onClose, children }: { title: string; onClose: () => void; children: React.ReactNode }) {
+  return (
+    <div className="fixed inset-0 z-50 flex items-end justify-center bg-zinc-950/45 backdrop-blur-xs p-0 sm:items-center sm:p-4">
+      <section role="dialog" aria-modal="true" aria-label={title} className="max-h-[92dvh] w-full overflow-y-auto rounded-t-3xl bg-white p-4 shadow-2xl sm:max-w-2xl sm:rounded-3xl sm:p-6">
+        <header className="sticky top-0 z-10 -mx-4 -mt-4 mb-5 flex items-center justify-between border-b border-zinc-100 bg-white px-4 py-4 sm:-mx-6 sm:-mt-6 sm:px-6">
+          <h2 className="text-lg font-bold text-zinc-950">{title}</h2>
+          <button onClick={onClose} aria-label="إغلاق" className="grid size-10 place-items-center rounded-xl bg-zinc-100 text-zinc-600 hover:bg-zinc-200 transition">
+            <X size={18} />
+          </button>
+        </header>
+        {children}
+      </section>
+    </div>
+  );
+}
 
-function CategoryEditor({ category, onSave, pending }: { category?: Category; onSave: (data: FormData) => Promise<void>; pending: boolean }) { return <form action={onSave} className="space-y-4"><Field label="الاسم بالعربية" name="nameAr" defaultValue={category?.nameAr} /><Field label="الاسم بالإنجليزية" name="nameEn" defaultValue={category?.nameEn} /><label className={labelClass}>وصف مختصر<textarea name="description" defaultValue={category?.description ?? ''} rows={3} className={`${inputClass} py-3`} /></label><SubmitButton pending={pending} /></form>; }
+function CategoryEditor({ category, onSave, onCancel, pending }: { category?: Category; onSave: (data: FormData) => Promise<void>; onCancel?: () => void; pending: boolean }) {
+  return (
+    <form action={onSave} className="space-y-4">
+      <Field label="الاسم بالعربية" name="nameAr" defaultValue={category?.nameAr} />
+      <Field label="الاسم بالإنجليزية" name="nameEn" defaultValue={category?.nameEn} />
+      <label className={labelClass}>
+        وصف مختصر
+        <textarea name="description" defaultValue={category?.description ?? ''} rows={3} className={`${inputClass} py-3`} />
+      </label>
+      <SubmitButton pending={pending} onCancel={onCancel} />
+    </form>
+  );
+}
 
-function ProductEditor({ product, categories, groups, onSave, pending }: { product?: Product; categories: Category[]; groups: Group[]; onSave: (data: FormData) => Promise<void>; pending: boolean }) {
+function ProductEditor({ product, categories, groups, onSave, onCancel, pending }: { product?: Product; categories: Category[]; groups: Group[]; onSave: (data: FormData) => Promise<void>; onCancel?: () => void; pending: boolean }) {
   const defaultSizes = product?.sizes.map((size) => ({ nameAr: size.nameAr, nameEn: size.nameEn, price: toMajor(size.price) })) ?? [{ nameAr: 'عادي', nameEn: 'Regular', price: '' }];
   const [sizes, setSizes] = useState<DraftSize[]>(defaultSizes);
-  return <form action={onSave} className="space-y-4">
-    <label className={labelClass}>التصنيف<select name="categoryId" defaultValue={product?.categoryId ?? categories[0]?.id ?? ''} required className={inputClass}>{categories.map((category) => <option key={category.id} value={category.id}>{category.nameAr}</option>)}</select></label>
-    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2"><Field label="اسم الصنف بالعربية" name="nameAr" defaultValue={product?.nameAr} /><Field label="اسم الصنف بالإنجليزية" name="nameEn" defaultValue={product?.nameEn} /></div>
-    <ProductImagePicker initialUrl={product?.imageUrl} name="imageUrl" />
-    <label className="flex items-center gap-3 rounded-xl border border-amber-200 bg-amber-50/50 p-3.5 cursor-pointer">
-      <input
-        type="checkbox"
-        name="isFeatured"
-        defaultChecked={product?.isFeatured ?? false}
-        className="size-4 accent-amber-600 rounded"
-      />
-      <div>
-        <span className="text-sm font-semibold text-zinc-900 block">عرض في السلايدر الرئيسي للموقع (طبق مميز / عروض)</span>
-        <span className="text-xs text-zinc-500 block">سيتم عرض هذا الصنف في السلايدر المتحرك في أعلى الصفحة الرئيسية</span>
+  return (
+    <form action={onSave} className="space-y-4">
+      <label className={labelClass}>
+        التصنيف
+        <select name="categoryId" defaultValue={product?.categoryId ?? categories[0]?.id ?? ''} required className={inputClass}>
+          {categories.map((category) => (
+            <option key={category.id} value={category.id}>{category.nameAr}</option>
+          ))}
+        </select>
+      </label>
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+        <Field label="اسم الصنف بالعربية" name="nameAr" defaultValue={product?.nameAr} />
+        <Field label="اسم الصنف بالإنجليزية" name="nameEn" defaultValue={product?.nameEn} />
       </div>
-    </label>
-    <label className={labelClass}>الوصف<textarea name="description" defaultValue={product?.description ?? ''} rows={2} className={`${inputClass} py-3`} /></label>
-    <div className="space-y-3 rounded-2xl bg-zinc-50 p-3 sm:p-4"><div className="flex items-center justify-between"><h3 className="text-sm font-semibold text-zinc-800">المقاسات والأسعار</h3><button type="button" onClick={() => setSizes((items) => [...items, { nameAr: '', nameEn: '', price: '' }])} className="inline-flex min-h-10 items-center gap-1.5 rounded-lg border border-zinc-200 bg-white px-3 text-xs font-medium text-zinc-700"><CirclePlus size={15} />إضافة مقاس</button></div>{sizes.map((size, index) => <div key={index} className="grid grid-cols-1 gap-2 rounded-xl border border-zinc-200 bg-white p-3 sm:grid-cols-[1fr_1fr_0.8fr_auto] sm:items-end"><Field label="الاسم العربي" name="sizeNameAr" value={size.nameAr} onChange={(value) => changeSize(index, 'nameAr', value, setSizes)} /><Field label="الاسم الإنجليزي" name="sizeNameEn" value={size.nameEn} onChange={(value) => changeSize(index, 'nameEn', value, setSizes)} /><Field label="السعر" name="sizePrice" type="number" inputMode="decimal" min="0" step="0.01" value={size.price} onChange={(value) => changeSize(index, 'price', value, setSizes)} />{sizes.length > 1 && <button type="button" aria-label="حذف المقاس" onClick={() => setSizes((items) => items.filter((_, itemIndex) => itemIndex !== index))} className="grid size-11 place-items-center rounded-lg text-zinc-500 hover:bg-zinc-100"><X size={16} /></button>}</div>)}</div>
-    {groups.length > 0 && <fieldset className="space-y-2"><legend className="mb-2 text-sm font-semibold text-zinc-800">مجموعات الإضافات</legend>{groups.map((group) => <label key={group.id} className="flex min-h-12 items-center gap-3 rounded-xl border border-zinc-200 px-3"><input type="checkbox" name="modifierGroupIds" value={group.id} defaultChecked={product?.modifierGroups.some((item) => item.group.id === group.id)} className="size-4 accent-zinc-900" /><span className="text-sm text-zinc-700">{group.nameAr}</span></label>)}</fieldset>}
-    <SubmitButton pending={pending} />
-  </form>;
+      <ProductImagePicker initialUrl={product?.imageUrl} name="imageUrl" />
+      <label className="flex items-center gap-3 rounded-xl border border-amber-200 bg-amber-50/50 p-3.5 cursor-pointer">
+        <input
+          type="checkbox"
+          name="isFeatured"
+          defaultChecked={product?.isFeatured ?? false}
+          className="size-4 accent-amber-600 rounded"
+        />
+        <div>
+          <span className="text-sm font-semibold text-zinc-900 block">عرض في السلايدر الرئيسي للموقع (طبق مميز / عروض)</span>
+          <span className="text-xs text-zinc-500 block">سيتم عرض هذا الصنف في السلايدر المتحرك في أعلى الصفحة الرئيسية</span>
+        </div>
+      </label>
+      <label className={labelClass}>
+        الوصف
+        <textarea name="description" defaultValue={product?.description ?? ''} rows={2} className={`${inputClass} py-3`} />
+      </label>
+      <div className="space-y-3 rounded-2xl bg-zinc-50 p-3 sm:p-4">
+        <div className="flex items-center justify-between">
+          <h3 className="text-sm font-semibold text-zinc-800">المقاسات والأسعار</h3>
+          <button type="button" onClick={() => setSizes((items) => [...items, { nameAr: '', nameEn: '', price: '' }])} className="inline-flex min-h-10 items-center gap-1.5 rounded-lg border border-zinc-200 bg-white px-3 text-xs font-medium text-zinc-700 hover:bg-zinc-50">
+            <CirclePlus size={15} />
+            إضافة مقاس
+          </button>
+        </div>
+        {sizes.map((size, index) => (
+          <div key={index} className="grid grid-cols-1 gap-2 rounded-xl border border-zinc-200 bg-white p-3 sm:grid-cols-[1fr_1fr_0.8fr_auto] sm:items-end">
+            <Field label="الاسم العربي" name="sizeNameAr" value={size.nameAr} onChange={(value) => changeSize(index, 'nameAr', value, setSizes)} />
+            <Field label="الاسم الإنجليزي" name="sizeNameEn" value={size.nameEn} onChange={(value) => changeSize(index, 'nameEn', value, setSizes)} />
+            <Field label="السعر" name="sizePrice" type="number" inputMode="decimal" min="0" step="0.01" value={size.price} onChange={(value) => changeSize(index, 'price', value, setSizes)} />
+            {sizes.length > 1 && (
+              <button type="button" aria-label="حذف المقاس" onClick={() => setSizes((items) => items.filter((_, itemIndex) => itemIndex !== index))} className="grid size-11 place-items-center rounded-lg text-zinc-500 hover:bg-zinc-100">
+                <X size={16} />
+              </button>
+            )}
+          </div>
+        ))}
+      </div>
+      {groups.length > 0 && (
+        <fieldset className="space-y-2">
+          <legend className="mb-2 text-sm font-semibold text-zinc-800">مجموعات الإضافات</legend>
+          {groups.map((group) => (
+            <label key={group.id} className="flex min-h-12 items-center gap-3 rounded-xl border border-zinc-200 px-3 cursor-pointer hover:bg-zinc-50">
+              <input type="checkbox" name="modifierGroupIds" value={group.id} defaultChecked={product?.modifierGroups.some((item) => item.group.id === group.id)} className="size-4 accent-zinc-900" />
+              <span className="text-sm text-zinc-700">{group.nameAr}</span>
+            </label>
+          ))}
+        </fieldset>
+      )}
+      <SubmitButton pending={pending} onCancel={onCancel} />
+    </form>
+  );
 }
 
 function changeSize(index: number, key: keyof DraftSize, value: string, setter: (update: (items: DraftSize[]) => DraftSize[]) => void) { setter((items) => items.map((item, itemIndex) => itemIndex === index ? { ...item, [key]: value } : item)); }
 
-function GroupEditor({ group, onSave, pending }: { group?: Group; onSave: (data: FormData) => Promise<void>; pending: boolean }) {
+function GroupEditor({ group, onSave, onCancel, pending }: { group?: Group; onSave: (data: FormData) => Promise<void>; onCancel?: () => void; pending: boolean }) {
   const defaultModifiers = group?.modifiers.map((item) => ({ nameAr: item.nameAr, nameEn: item.nameEn, price: toMajor(item.priceDelta) })) ?? [{ nameAr: '', nameEn: '', price: '0' }];
   const [modifiers, setModifiers] = useState<DraftModifier[]>(defaultModifiers);
-  return <form action={onSave} className="space-y-4"><div className="grid grid-cols-1 gap-3 sm:grid-cols-2"><Field label="اسم المجموعة بالعربية" name="nameAr" defaultValue={group?.nameAr} /><Field label="اسم المجموعة بالإنجليزية" name="nameEn" defaultValue={group?.nameEn} /></div><div className="grid grid-cols-2 gap-3"><Field label="أقل عدد اختيارات" name="minSelect" type="number" min="0" defaultValue={group?.minSelect ?? 0} /><Field label="أقصى عدد اختيارات" name="maxSelect" type="number" min="1" defaultValue={group?.maxSelect ?? 1} /></div><div className="space-y-3 rounded-2xl bg-zinc-50 p-3"><div className="flex items-center justify-between"><h3 className="text-sm font-semibold text-zinc-800">الخيارات</h3><button type="button" onClick={() => setModifiers((items) => [...items, { nameAr: '', nameEn: '', price: '0' }])} className="inline-flex min-h-10 items-center gap-1.5 rounded-lg border border-zinc-200 bg-white px-3 text-xs font-medium text-zinc-700"><CirclePlus size={15} />إضافة خيار</button></div>{modifiers.map((modifier, index) => <div key={index} className="grid grid-cols-1 gap-2 rounded-xl border border-zinc-200 bg-white p-3 sm:grid-cols-[1fr_1fr_0.8fr_auto] sm:items-end"><Field label="اسم الخيار بالعربية" name="modifierNameAr" value={modifier.nameAr} onChange={(value) => setModifiers((items) => items.map((item, itemIndex) => itemIndex === index ? { ...item, nameAr: value } : item))} /><Field label="بالإنجليزية" name="modifierNameEn" value={modifier.nameEn} onChange={(value) => setModifiers((items) => items.map((item, itemIndex) => itemIndex === index ? { ...item, nameEn: value } : item))} /><Field label="زيادة السعر" name="modifierPrice" type="number" min="0" step="0.01" value={modifier.price} onChange={(value) => setModifiers((items) => items.map((item, itemIndex) => itemIndex === index ? { ...item, price: value } : item))} />{modifiers.length > 1 && <button type="button" aria-label="حذف الخيار" onClick={() => setModifiers((items) => items.filter((_, itemIndex) => itemIndex !== index))} className="grid size-11 place-items-center rounded-lg text-zinc-500"><X size={16} /></button>}</div>)}</div><SubmitButton pending={pending} /></form>;
+  return (
+    <form action={onSave} className="space-y-4">
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+        <Field label="اسم المجموعة بالعربية" name="nameAr" defaultValue={group?.nameAr} />
+        <Field label="اسم المجموعة بالإنجليزية" name="nameEn" defaultValue={group?.nameEn} />
+      </div>
+      <div className="grid grid-cols-2 gap-3">
+        <Field label="أقل عدد اختيارات" name="minSelect" type="number" min="0" defaultValue={group?.minSelect ?? 0} />
+        <Field label="أقصى عدد اختيارات" name="maxSelect" type="number" min="1" defaultValue={group?.maxSelect ?? 1} />
+      </div>
+      <div className="space-y-3 rounded-2xl bg-zinc-50 p-3">
+        <div className="flex items-center justify-between">
+          <h3 className="text-sm font-semibold text-zinc-800">الخيارات</h3>
+          <button type="button" onClick={() => setModifiers((items) => [...items, { nameAr: '', nameEn: '', price: '0' }])} className="inline-flex min-h-10 items-center gap-1.5 rounded-lg border border-zinc-200 bg-white px-3 text-xs font-medium text-zinc-700 hover:bg-zinc-50">
+            <CirclePlus size={15} />
+            إضافة خيار
+          </button>
+        </div>
+        {modifiers.map((modifier, index) => (
+          <div key={index} className="grid grid-cols-1 gap-2 rounded-xl border border-zinc-200 bg-white p-3 sm:grid-cols-[1fr_1fr_0.8fr_auto] sm:items-end">
+            <Field label="اسم الخيار بالعربية" name="modifierNameAr" value={modifier.nameAr} onChange={(value) => setModifiers((items) => items.map((item, itemIndex) => itemIndex === index ? { ...item, nameAr: value } : item))} />
+            <Field label="بالإنجليزية" name="modifierNameEn" value={modifier.nameEn} onChange={(value) => setModifiers((items) => items.map((item, itemIndex) => itemIndex === index ? { ...item, nameEn: value } : item))} />
+            <Field label="زيادة السعر" name="modifierPrice" type="number" min="0" step="0.01" value={modifier.price} onChange={(value) => setModifiers((items) => items.map((item, itemIndex) => itemIndex === index ? { ...item, price: value } : item))} />
+            {modifiers.length > 1 && (
+              <button type="button" aria-label="حذف الخيار" onClick={() => setModifiers((items) => items.filter((_, itemIndex) => itemIndex !== index))} className="grid size-11 place-items-center rounded-lg text-zinc-500 hover:bg-zinc-100">
+                <X size={16} />
+              </button>
+            )}
+          </div>
+        ))}
+      </div>
+      <SubmitButton pending={pending} onCancel={onCancel} />
+    </form>
+  );
 }
 
 function Field({ label, name, defaultValue, value, onChange, type = 'text', required = true, ...props }: { label: string; name: string; defaultValue?: string | number; value?: string; onChange?: (value: string) => void; type?: string; required?: boolean; min?: string | number; max?: string | number; step?: string; inputMode?: 'decimal' | 'numeric' }) { return <label className={labelClass}>{label}<input className={inputClass} name={name} type={type} defaultValue={defaultValue} value={value} onChange={onChange ? (event) => onChange(event.target.value) : undefined} required={required} {...props} /></label>; }
 
-function SubmitButton({ pending }: { pending: boolean }) { return <button disabled={pending} className="flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-zinc-900 px-4 text-sm font-semibold text-white disabled:opacity-60">{pending ? 'جارٍ الحفظ...' : <><Check size={17} />حفظ التغييرات</>}</button>; }
+function SubmitButton({ pending, onCancel }: { pending: boolean; onCancel?: () => void }) {
+  return (
+    <div className="flex items-center gap-2.5 pt-2">
+      {onCancel && (
+        <button
+          type="button"
+          onClick={onCancel}
+          disabled={pending}
+          className="min-h-12 rounded-xl border border-zinc-200 bg-white px-5 text-sm font-semibold text-zinc-700 hover:bg-zinc-50 transition disabled:opacity-50"
+        >
+          إلغاء
+        </button>
+      )}
+      <button
+        disabled={pending}
+        type="submit"
+        className="flex min-h-12 flex-1 items-center justify-center gap-2 rounded-xl bg-zinc-900 px-4 text-sm font-semibold text-white disabled:opacity-60 hover:bg-zinc-800 transition"
+      >
+        {pending ? 'جارٍ الحفظ...' : <><Check size={17} />حفظ التغييرات</>}
+      </button>
+    </div>
+  );
+}
 
 function editorTitle(tab: Tab, id: string | null) { const action = id ? 'تعديل' : 'إضافة'; if (tab === 'products') return `${action} صنف`; if (tab === 'categories') return `${action} تصنيف`; return `${action} مجموعة إضافات`; }

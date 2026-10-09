@@ -1,3 +1,4 @@
+import 'dotenv/config';
 import { prisma } from '../src/infrastructure/db/prisma';
 import bcrypt from 'bcryptjs';
 import { SYSTEM_PERMISSIONS } from '../src/domain/staff/enums/permission.enum';
