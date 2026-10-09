@@ -60,7 +60,7 @@ export class CloseTableTabUseCase {
         });
       }
 
-      // Complete Order & Close Tab
+      // Complete Order & Close Tab (Attributed to Active Settling Shift)
       const completedOrder = await tx.order.update({
         where: { id: order.id },
         data: {
@@ -68,6 +68,8 @@ export class CloseTableTabUseCase {
           paymentStatus: PaymentStatus.PAID,
           paymentMethod: validated.paymentMethod,
           isTabOpen: false,
+          cashShiftId: validated.cashShiftId,
+          cashierId: shift.cashierId,
         },
       });
 

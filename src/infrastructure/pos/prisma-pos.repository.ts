@@ -2,7 +2,7 @@ import { Prisma } from '@prisma/client';
 import { prisma } from '../db/prisma';
 import { PosRepository, PosScope, PosShift, PosShiftClose, PosTransaction } from '../../domain/pos/contracts/pos.repository';
 import { CashShiftStatus } from '../../domain/pos/enums';
-import { ConflictError } from '../../domain/shared/errors/domain-error';
+import { ConflictError, ValidationError } from '../../domain/shared/errors/domain-error';
 import { Money } from '../../domain/shared/value-objects/money';
 import { OrderSource, PaymentMethod } from '../../domain/ordering/enums';
 import { PrismaPosTransaction } from './prisma-pos-transaction';
@@ -33,6 +33,17 @@ export class PrismaPosRepository implements PosRepository {
     return prisma.$transaction(async (client) => {
       const transaction = new PrismaPosTransaction(client);
       await transaction.lockShift(shiftId, { branchId, cashierId, canDiscount: false }, false);
+      const openTabsCount = await client.order.count({
+        where: {
+          cashShiftId: shiftId,
+          isTabOpen: true,
+        },
+      });
+      if (openTabsCount > 0) {
+        throw new ValidationError(
+          `لا يمكن إغلاق الوردية: توجد (${openTabsCount}) طاولات مفتوحة لم يتم تسوية شيكاتها بعد. يرجى إغلاق حساب الطاولات أولاً.`
+        );
+      }
       const shift = await client.cashShift.findUniqueOrThrow({ where: { id: shiftId } });
       const settings = await transaction.getSettings();
       const [cash, movements, expenses] = await Promise.all([

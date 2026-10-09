@@ -23,6 +23,7 @@ import { BranchContextService } from '../../../infrastructure/auth/branch-contex
 import { RbacGuard } from '../../../infrastructure/auth/rbac-guard';
 import { PermissionCode } from '../../../domain/staff/enums/permission.enum';
 import { Money } from '../../../domain/shared/value-objects/money';
+import { getCairoTodayRange } from '../../../domain/shared/utils/date-range';
 
 export const dynamic = 'force-dynamic';
 
@@ -62,10 +63,9 @@ export default async function AdminDashboardPage() {
   const currency = settings?.currency || 'EGP';
   const currencySymbol = settings?.currencySymbol || 'ج.م';
 
-  // 2. Today's Date Range Boundaries
+  // 2. Today's Date Range Boundaries (Normalized to Operational Timezone Africa/Cairo)
   const now = new Date();
-  const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0);
-  const endOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999);
+  const { startOfToday, endOfToday } = getCairoTodayRange(now);
 
   const arabicDate = new Intl.DateTimeFormat('ar-EG', {
     weekday: 'long',

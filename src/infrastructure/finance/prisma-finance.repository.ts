@@ -15,7 +15,7 @@ import { ConflictError, NotFoundError, ValidationError } from '../../domain/shar
 import { Money } from '../../domain/shared/value-objects/money';
 import { CashShiftCalculatorService } from '../../domain/finance/services/cash-shift-calculator.service';
 import { ProfitabilityCalculatorService } from '../../domain/finance/services/profitability-calculator.service';
-import { PaymentMethod, OrderStatus } from '../../domain/ordering/enums';
+import { PaymentMethod, OrderStatus, PaymentStatus } from '../../domain/ordering/enums';
 
 export class PrismaFinanceRepository implements FinanceRepository {
   public async listShifts(params: {
@@ -51,10 +51,8 @@ export class PrismaFinanceRepository implements FinanceRepository {
     return shifts.map((shift) => {
       let cashSalesMinor = 0;
       let cardSalesMinor = 0;
-      let totalSalesMinor = 0;
 
       for (const order of shift.orders) {
-        totalSalesMinor += order.totalMinor;
         for (const payment of order.payments) {
           if (payment.method === PaymentMethod.CASH) {
             cashSalesMinor += payment.amountMinor;
@@ -63,6 +61,7 @@ export class PrismaFinanceRepository implements FinanceRepository {
           }
         }
       }
+      const totalSalesMinor = cashSalesMinor + cardSalesMinor;
 
       return {
         id: shift.id,
@@ -124,10 +123,8 @@ export class PrismaFinanceRepository implements FinanceRepository {
 
     let cashSalesMinor = 0;
     let cardSalesMinor = 0;
-    let totalSalesMinor = 0;
 
     for (const order of shift.orders) {
-      totalSalesMinor += order.totalMinor;
       for (const payment of order.payments) {
         if (payment.method === PaymentMethod.CASH) {
           cashSalesMinor += payment.amountMinor;
@@ -136,6 +133,7 @@ export class PrismaFinanceRepository implements FinanceRepository {
         }
       }
     }
+    const totalSalesMinor = cashSalesMinor + cardSalesMinor;
 
     let cashInMinor = 0;
     let cashDropMinor = 0;
@@ -289,6 +287,18 @@ export class PrismaFinanceRepository implements FinanceRepository {
         }
         if (shift.status !== CashShiftStatus.OPEN) {
           throw new ConflictError('الوردية مغلقة بالفعل');
+        }
+
+        const openTabsCount = await client.order.count({
+          where: {
+            cashShiftId: params.shiftId,
+            isTabOpen: true,
+          },
+        });
+        if (openTabsCount > 0) {
+          throw new ConflictError(
+            `لا يمكن إغلاق الوردية: توجد (${openTabsCount}) طاولات مفتوحة لم يتم تسوية شيكاتها بعد. يرجى إغلاق حساب الطاولات أولاً.`
+          );
         }
 
         const currency = shift.currency ?? 'EGP';
@@ -580,12 +590,13 @@ export class PrismaFinanceRepository implements FinanceRepository {
 
     const branchFilter = params.branchId ? { branchId: params.branchId } : {};
 
-    // 1. Fetch completed/delivered orders
+    // 1. Fetch completed/delivered/paid orders
     const orders = await prisma.order.findMany({
       where: {
         ...branchFilter,
         createdAt: { gte: params.fromDate, lte: params.toDate },
-        status: { in: [OrderStatus.COMPLETED, OrderStatus.DELIVERED] },
+        paymentStatus: PaymentStatus.PAID,
+        status: { notIn: [OrderStatus.CANCELLED, OrderStatus.REJECTED] },
       },
       select: {
         id: true,

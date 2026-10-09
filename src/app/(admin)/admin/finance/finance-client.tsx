@@ -420,7 +420,7 @@ export function FinanceClient({ initialData }: FinanceClientProps) {
 
             <div className="rounded-xl border border-zinc-200 bg-white p-4 shadow-xs">
               <div className="flex items-center justify-between text-zinc-500">
-                <span className="text-xs font-medium">إجمالي مبيعات اليوم (المسجلة)</span>
+                <span className="text-xs font-medium">إجمالي مبيعات اليوم (المحصلة)</span>
                 <DollarSign className="h-4 w-4 text-zinc-600" />
               </div>
               <p className="mt-2 text-2xl font-bold text-zinc-900">

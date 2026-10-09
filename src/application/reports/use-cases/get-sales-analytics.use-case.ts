@@ -64,6 +64,7 @@ export class GetSalesAnalyticsUseCase {
       status: {
         notIn: ['CANCELLED', 'REJECTED', 'PENDING'],
       },
+      isTabOpen: false,
       ...(filter.branchId ? { branchId: filter.branchId } : {}),
     };
 
