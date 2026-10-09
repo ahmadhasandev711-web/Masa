@@ -119,6 +119,26 @@ export class UpdateOrderStatusUseCase {
       });
     }
 
+    // Reclassify deducted inventory movements as WASTE when order is cancelled or rejected
+    if (
+      (targetStatus === OrderStatus.CANCELLED || targetStatus === OrderStatus.REJECTED) &&
+      currentStatus !== OrderStatus.CANCELLED &&
+      currentStatus !== OrderStatus.REJECTED
+    ) {
+      await prisma.inventoryMovement.updateMany({
+        where: {
+          referenceId: order.id,
+          type: {
+            in: [InventoryMovementType.SALE_ONLINE, InventoryMovementType.SALE_POS],
+          },
+        },
+        data: {
+          type: InventoryMovementType.WASTE,
+          notes: `هالك ناتج عن إلغاء الطلب #${order.orderNumber}${validated.cancelReason ? ` - السبب: ${validated.cancelReason}` : ''}`,
+        },
+      });
+    }
+
     return {
       ...updated,
       taxRatePercent: Number(updated.taxRatePercent),

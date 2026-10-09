@@ -18,8 +18,7 @@ import {
 import { PosReceipt } from '../../../domain/pos/contracts/pos.repository';
 import { Money } from '../../../domain/shared/value-objects/money';
 import { TableStatus } from '../../../domain/tables/enums';
-import { OrderType, OrderStatus } from '../../../domain/ordering/enums';
-import { listOrdersAction, updateOrderStatusAction } from '../../actions/order.actions';
+import { OrderType } from '../../../domain/ordering/enums';
 import { PosCatalog } from './pos-catalog';
 import { ProductPicker } from './product-picker';
 import { CartLines, CartTypeSelector, CartOptions, CartTotals } from './pos-cart';
@@ -34,83 +33,6 @@ import { TableTabModal } from './table-tab-modal';
 import { PosModal, posButton, posPrimary } from './pos-ui';
 import { PosClientProps } from './pos.types';
 import { PosWorkspace, usePosWorkspace } from './use-pos-workspace';
-
-export interface ReadyOrderSummary {
-  id: string;
-  orderNumber: string;
-  type: string;
-  tableName?: string | null;
-  itemsSummary?: string;
-}
-
-function ReadyOrdersModal({
-  orders,
-  onCompleteOrder,
-  onClose,
-}: {
-  orders: ReadyOrderSummary[];
-  onCompleteOrder: (orderId: string) => Promise<void>;
-  onClose: () => void;
-}) {
-  const [completingId, setCompletingId] = useState<string | null>(null);
-
-  const handleComplete = async (orderId: string) => {
-    setCompletingId(orderId);
-    try {
-      await onCompleteOrder(orderId);
-    } finally {
-      setCompletingId(null);
-    }
-  };
-
-  return (
-    <PosModal title="طلبات تم تجهيزها في المطبخ (جاهزة للاستلام والتقديم)" onClose={onClose}>
-      {!orders.length ? (
-        <p className="text-sm text-zinc-500 py-4 text-center">لا توجد طلبات جاهزة حالياً بالمطبخ.</p>
-      ) : (
-        <div className="space-y-2.5 max-h-[60vh] overflow-y-auto">
-          {orders.map((order) => (
-            <div
-              key={order.id}
-              className="flex items-center justify-between p-3 rounded-xl border border-emerald-200 bg-emerald-50/60"
-            >
-              <div>
-                <div className="flex items-center gap-2">
-                  <span className="font-mono font-bold text-xs text-zinc-900" dir="ltr">
-                    {order.orderNumber}
-                  </span>
-                  <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-600 text-white">
-                    {order.type === 'DINE_IN'
-                      ? `صالة (طاولة ${order.tableName || 'غير محددة'})`
-                      : order.type === 'TAKEAWAY'
-                      ? 'سفري'
-                      : 'توصيل'}
-                  </span>
-                </div>
-                {order.itemsSummary && (
-                  <p className="text-xs text-zinc-600 mt-1 max-w-[280px] truncate">
-                    {order.itemsSummary}
-                  </p>
-                )}
-              </div>
-              <div className="flex items-center gap-2">
-                <button
-                  type="button"
-                  onClick={() => handleComplete(order.id)}
-                  disabled={completingId === order.id}
-                  className="flex items-center gap-1.5 text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-700 px-3 py-1.5 rounded-lg transition shadow-xs disabled:opacity-50"
-                >
-                  <CheckCircle2 size={14} />
-                  <span>{completingId === order.id ? 'جاري التسليم...' : 'تسليم للزبون'}</span>
-                </button>
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
-    </PosModal>
-  );
-}
 
 function RecentReceipts({
   receipts,
@@ -266,15 +188,11 @@ function PostSaleModal({
 function PosHeader({
   state,
   cartItemCount,
-  readyOrdersCount = 0,
   onOpenMobileCart,
-  onOpenReadyOrders,
 }: {
   state: PosWorkspace;
   cartItemCount: number;
-  readyOrdersCount?: number;
   onOpenMobileCart: () => void;
-  onOpenReadyOrders?: () => void;
 }) {
   const occupiedTablesCount = state.tables.filter(
     (t) => t.status === TableStatus.OCCUPIED || t.status === TableStatus.BILL_PRINTED
@@ -297,21 +215,6 @@ function PosHeader({
       </div>
 
       <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
-        {/* Ready Orders From Kitchen Badge */}
-        {readyOrdersCount > 0 && onOpenReadyOrders && (
-          <button
-            type="button"
-            onClick={onOpenReadyOrders}
-            className="flex items-center gap-1.5 px-2 sm:px-2.5 py-1.5 rounded-xl text-xs font-bold bg-emerald-50 text-emerald-800 border border-emerald-300 animate-pulse hover:bg-emerald-100 transition shadow-2xs"
-            title="طلبات جهزت في المطبخ بانتظار الاستلام أو التقديم"
-          >
-            <ChefHat size={14} className="text-emerald-700" />
-            <span className="hidden sm:inline">جاهز بالمطبخ</span>
-            <span className="px-1.5 py-0.2 rounded-full bg-emerald-600 text-white text-[10px]">
-              {readyOrdersCount}
-            </span>
-          </button>
-        )}
         {/* Floor Plan / Dining Hall Switch Button */}
         {state.shift && (
           <button
@@ -771,10 +674,6 @@ export function PosClient(props: PosClientProps) {
   const [showMobileCart, setShowMobileCart] = useState(false);
   const [activePrintDoc, setActivePrintDoc] = useState<ActivePrintDoc>(null);
 
-  // Ready orders from kitchen polling
-  const [readyOrders, setReadyOrders] = useState<ReadyOrderSummary[]>([]);
-  const [showReadyOrders, setShowReadyOrders] = useState(false);
-
   // Auto-print KOT preference (saved in localStorage)
   const [autoPrintKot, setAutoPrintKot] = useState<boolean>(() => {
     if (typeof window !== 'undefined') {
@@ -888,38 +787,6 @@ export function PosClient(props: PosClientProps) {
     return () => clearTimeout(timer);
   }, [state.lastCompletedReceipt, autoPrintKot]);
 
-  useEffect(() => {
-    let isMounted = true;
-    const fetchReady = async () => {
-      try {
-        const res = await listOrdersAction({
-          branchId: state.branch.id,
-          status: OrderStatus.READY_FOR_PICKUP,
-          limit: 20,
-        });
-        if (res.success && res.data && isMounted) {
-          const mapped: ReadyOrderSummary[] = res.data.orders.map((o) => ({
-            id: o.id,
-            orderNumber: o.orderNumber,
-            type: o.type,
-            tableName: o.tableName,
-            itemsSummary: o.items.map((i) => `${i.quantity}× ${i.productNameAr}`).join('، '),
-          }));
-          setReadyOrders(mapped);
-        }
-      } catch {
-        // Silently catch background poll error
-      }
-    };
-
-    fetchReady();
-    const timer = setInterval(fetchReady, 20000);
-    return () => {
-      isMounted = false;
-      clearInterval(timer);
-    };
-  }, [state.branch.id]);
-
   const cartItemCount = state.items.reduce((acc, item) => acc + item.quantity, 0);
   const isMobileCartOpen = showMobileCart && cartItemCount > 0;
 
@@ -932,9 +799,7 @@ export function PosClient(props: PosClientProps) {
         <PosHeader
           state={state}
           cartItemCount={cartItemCount}
-          readyOrdersCount={readyOrders.length}
           onOpenMobileCart={() => setShowMobileCart(true)}
-          onOpenReadyOrders={() => setShowReadyOrders(true)}
         />
         {state.notice && (
           <p
@@ -957,22 +822,6 @@ export function PosClient(props: PosClientProps) {
           onPrintKotFromReceipt={handlePrintKotFromReceipt}
         />
       </div>
-
-      {/* Ready Orders Modal */}
-      {showReadyOrders && (
-        <ReadyOrdersModal
-          orders={readyOrders}
-          onCompleteOrder={async (orderId) => {
-            const res = await updateOrderStatusAction({ orderId, nextStatus: OrderStatus.COMPLETED });
-            if (res.success) {
-              setReadyOrders((prev) => prev.filter((o) => o.id !== orderId));
-            } else {
-              alert(res.error || 'تعذر إتمام الطلب');
-            }
-          }}
-          onClose={() => setShowReadyOrders(false)}
-        />
-      )}
 
       {/* Post-Sale Modal (Options: Print Receipt, Print KOT, Print Both, Auto-Print toggle) */}
       {state.lastCompletedReceipt && (

@@ -1,6 +1,6 @@
 import { prisma } from '../../../infrastructure/db/prisma';
 import { NotFoundError, ValidationError } from '../../../domain/shared/errors/domain-error';
-import { OrderStatus } from '../../../domain/ordering/enums';
+import { OrderStatus, OrderType, PaymentStatus } from '../../../domain/ordering/enums';
 import { OrderStateMachineService } from '../../../domain/ordering/services/order-state-machine.service';
 import { BumpKitchenOrderDto, bumpKitchenOrderSchema } from '../dto/kitchen.dto';
 
@@ -24,12 +24,16 @@ export class BumpKitchenOrderUseCase {
     }
 
     const currentStatus = order.status as OrderStatus;
-    const nextStatus = OrderStatus.READY_FOR_PICKUP;
+    const nextStatus =
+      order.type === OrderType.DELIVERY
+        ? OrderStatus.READY_FOR_PICKUP
+        : OrderStatus.COMPLETED;
 
     OrderStateMachineService.assertCanTransition({
       currentStatus,
       nextStatus,
       branchId: order.branchId,
+      orderType: order.type,
     });
 
     const now = new Date();
@@ -49,6 +53,9 @@ export class BumpKitchenOrderUseCase {
         data: {
           status: nextStatus,
           kitchenCompletedAt: now,
+          ...(nextStatus === OrderStatus.COMPLETED && order.paymentStatus !== PaymentStatus.PAID
+            ? { paymentStatus: PaymentStatus.PAID }
+            : {}),
         },
         include: {
           items: {

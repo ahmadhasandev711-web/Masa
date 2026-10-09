@@ -18,7 +18,7 @@ export class OrderStateMachineService {
     [OrderStatus.COMPLETED]: [],
     [OrderStatus.PENDING]: [OrderStatus.CONFIRMED, OrderStatus.CANCELLED, OrderStatus.REJECTED],
     [OrderStatus.CONFIRMED]: [OrderStatus.PREPARING, OrderStatus.CANCELLED],
-    [OrderStatus.PREPARING]: [OrderStatus.READY_FOR_PICKUP, OrderStatus.CANCELLED],
+    [OrderStatus.PREPARING]: [OrderStatus.READY_FOR_PICKUP, OrderStatus.COMPLETED, OrderStatus.CANCELLED],
     [OrderStatus.READY_FOR_PICKUP]: [OrderStatus.OUT_FOR_DELIVERY, OrderStatus.COMPLETED, OrderStatus.CANCELLED],
     [OrderStatus.OUT_FOR_DELIVERY]: [OrderStatus.DELIVERED, OrderStatus.CANCELLED],
     [OrderStatus.DELIVERED]: [],
@@ -31,6 +31,11 @@ export class OrderStateMachineService {
    */
   public static getAllowedTransitions(currentStatus: OrderStatus, orderType?: string | null): readonly OrderStatus[] {
     const transitions = this.VALID_TRANSITIONS[currentStatus] ?? [];
+    if (currentStatus === OrderStatus.PREPARING && orderType) {
+      if (orderType === 'DELIVERY') {
+        return transitions.filter((s) => s !== OrderStatus.COMPLETED);
+      }
+    }
     if (currentStatus === OrderStatus.READY_FOR_PICKUP && orderType) {
       if (orderType === 'DELIVERY') {
         return transitions.filter((s) => s !== OrderStatus.COMPLETED);
@@ -110,6 +115,14 @@ export class OrderStateMachineService {
       return {
         allowed: false,
         reason: 'طلبات التوصيل يجب إسنادها لمندوب توصيل والتسليم عبره (DELIVERED)',
+      };
+    }
+
+    // Business rule: Moving to COMPLETED from PREPARING is only for non-delivery (takeaway / dine-in)
+    if (currentStatus === OrderStatus.PREPARING && nextStatus === OrderStatus.COMPLETED && params.orderType === 'DELIVERY') {
+      return {
+        allowed: false,
+        reason: 'طلبات التوصيل لا تكتمل مباشرة من المطبخ بل تمر بمرحلة التجهيز والتسليم لمندوب (OUT_FOR_DELIVERY)',
       };
     }
 
