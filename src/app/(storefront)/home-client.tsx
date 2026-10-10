@@ -156,7 +156,7 @@ export function HomeClient({
     { name: 'م. طارق سلامة', text: 'أجمل وأروق كافيه في العاشر من رمضان! القهوة مظبوطة بالملي والمكان ممتاز للعمل والمذاكرة.', rating: 5 },
     { name: 'ريم عبد الله', text: 'فاتحين 24 ساعة وده أحسن ميزة في ستريب مول! الخدمة سريعة جداً والسبانش لاتيه تحفة.', rating: 5 },
     { name: 'أحمد مصطفى', text: 'المكان فخم والجلسات مريحة للغاية، البن جودته عالية والكرواسون والحلويات طازجة ولذيذة.', rating: 5 },
-    { name: 'د. حسام فتحي', text: 'قهوة كايرو بقى مكاني المفضل في العاشر، ضيافة ممتازة وراحة نفسية غير عادية.', rating: 5 },
+    { name: 'د. حسام فتحي', text: 'بقى مكاني المفضل دائماً، ضيافة ممتازة وراحة نفسية غير عادية.', rating: 5 },
     { name: 'مروان إبراهيم', text: 'القهوة التركي المحوجة معمولة على أصولها، والقعدة في التراس بالليل هادية ومميزة.', rating: 5 },
     { name: 'نورهان علي', text: 'الكافيه نظيف جداً وفريق العمل بشوش ومحترم، أحسن قعدة مع الأصدقاء والعائلة.', rating: 5 },
   ];
@@ -164,7 +164,7 @@ export function HomeClient({
     { name: 'Tarek S.', text: 'Best cafe vibe in 10th of Ramadan! Coffee is authentic and seating is super comfy for laptop work.', rating: 5 },
     { name: 'Reem A.', text: 'Open 24/7 in Strip Mall! Fast service and their iced Spanish latte is perfection.', rating: 5 },
     { name: 'Ahmed M.', text: 'Luxurious ambience, comfortable chairs, and top-tier roasted beans. Highly recommended!', rating: 5 },
-    { name: 'Dr. Hossam F.', text: 'Qahwet Cairo is my daily sanctuary. Outstanding hospitality and peaceful atmosphere.', rating: 5 },
+    { name: 'Dr. Hossam F.', text: 'This is my daily sanctuary. Outstanding hospitality and peaceful atmosphere.', rating: 5 },
     { name: 'Marwan I.', text: 'Traditional Turkish coffee made to perfection, terrace night seating is pure bliss.', rating: 5 },
     { name: 'Nourhan A.', text: 'Spotlessly clean, warm staff, and wonderful desserts. The best cafe in town!', rating: 5 },
   ];
@@ -489,7 +489,7 @@ export function HomeClient({
             <span>{isAr ? 'آراء موثقة من رواد المكان' : 'Verified Guest Reviews'}</span>
           </div>
           <h2 className="text-2xl font-extrabold tracking-tight text-white mt-4 sm:text-3xl">
-            {isAr ? 'ماذا يقول رواد قهوة كايرو' : 'What Our Guests Say'}
+            {isAr ? 'ماذا يقول رواد المكان' : 'What Our Guests Say'}
           </h2>
         </div>
         
@@ -594,7 +594,7 @@ export function HomeClient({
             <span>{isAr ? 'موقعنا في ستريب مول' : 'Visit Us at Strip Mall'}</span>
           </div>
           <h2 className="text-2xl font-extrabold tracking-tight text-white sm:text-4xl">
-            {isAr ? 'موقع قهوة كايرو بالعاشر من رمضان' : 'Our Location in 10th of Ramadan'}
+            {isAr ? 'موقعنا وفروعنا' : 'Our Location'}
           </h2>
           <p className="max-w-xl mx-auto text-xs sm:text-sm text-zinc-400">
             {isAr

@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import Image from 'next/image';
 import { Archive, Check, ChevronDown, CirclePlus, FolderOpen, Layers3, Pencil, Plus, QrCode, Search, Sparkles, Trash2, Utensils, X } from 'lucide-react';
 import { deleteCategoryAction, deleteModifierGroupAction, deleteProductAction, saveCategoryAction, saveModifierGroupAction, saveProductAction, setBranchAvailabilityAction, setCatalogStatusAction, toggleProductFeaturedAction } from '../../../actions/catalog.actions';
@@ -58,6 +58,15 @@ export function MenuManager({
   const [groups, setGroups] = useState(initialGroups);
   const [tab, setTab] = useState<Tab>('products');
   const [query, setQuery] = useState('');
+  const [debouncedQuery, setDebouncedQuery] = useState('');
+
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedQuery(query);
+    }, 300);
+    return () => clearTimeout(handler);
+  }, [query]);
+
   const [modal, setModal] = useState<Tab | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [isQrModalOpen, setIsQrModalOpen] = useState(false);
@@ -66,9 +75,18 @@ export function MenuManager({
   const [branchId, setBranchId] = useState(branches[0]?.id ?? '');
   const [deleteTarget, setDeleteTarget] = useState<DeleteTarget | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
+
   const visibleProducts = useMemo(() => products.filter((product) =>
-    `${product.nameAr} ${product.nameEn} ${product.category.nameAr}`.toLowerCase().includes(query.toLowerCase())
-  ), [products, query]);
+    `${product.nameAr} ${product.nameEn} ${product.category.nameAr}`.toLowerCase().includes(debouncedQuery.toLowerCase())
+  ), [products, debouncedQuery]);
+
+  const visibleCategories = useMemo(() => categories.filter((item) =>
+    `${item.nameAr} ${item.nameEn}`.toLowerCase().includes(debouncedQuery.toLowerCase())
+  ), [categories, debouncedQuery]);
+
+  const visibleGroups = useMemo(() => groups.filter((item) =>
+    `${item.nameAr} ${item.nameEn}`.toLowerCase().includes(debouncedQuery.toLowerCase())
+  ), [groups, debouncedQuery]);
 
   const openNew = (type: Tab) => { setEditingId(null); setError(''); setModal(type); };
   const openEdit = (type: Tab, id: string) => { setEditingId(id); setError(''); setModal(type); };
@@ -228,9 +246,9 @@ export function MenuManager({
         </article>;
       })}{visibleProducts.length === 0 && <EmptyState title="لا توجد أصناف" description="ابدأ بإضافة أول صنف إلى المنيو." />}</div>}
 
-      {tab === 'categories' && <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">{categories.filter((item) => `${item.nameAr} ${item.nameEn}`.toLowerCase().includes(query.toLowerCase())).map((category) => <article key={category.id} className="flex items-center gap-3 rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm"><span className="grid size-11 shrink-0 place-items-center rounded-xl bg-zinc-100 text-zinc-600"><FolderOpen size={18} /></span><div className="min-w-0 flex-1"><h2 className={`truncate font-semibold ${category.isActive ? 'text-zinc-900' : 'text-zinc-400'}`}>{category.nameAr}</h2><p className="truncate text-xs text-zinc-500">{category.nameEn}{!category.isActive && ' · مؤرشف'}</p></div><button onClick={() => openEdit('categories', category.id)} aria-label={`تعديل ${category.nameAr}`} className="grid size-10 shrink-0 place-items-center rounded-xl border border-zinc-200 text-zinc-600"><Pencil size={16} /></button><button onClick={() => setActive(CatalogResource.CATEGORY, category.id, !category.isActive)} aria-label={category.isActive ? 'أرشفة التصنيف' : 'إعادة تفعيل التصنيف'} className="grid size-10 shrink-0 place-items-center rounded-xl border border-zinc-200 text-zinc-600"><Archive size={16} /></button><button onClick={() => setDeleteTarget({ type: 'category', id: category.id, name: category.nameAr })} aria-label={`حذف ${category.nameAr}`} title="حذف التصنيف" className="grid size-10 shrink-0 place-items-center rounded-xl border border-zinc-200 text-rose-600 hover:bg-rose-50 hover:border-rose-300 transition"><Trash2 size={16} /></button></article>)}{categories.length === 0 && <EmptyState title="ابدأ بالتصنيفات" description="أنشئ تصنيفات مثل الوجبات والمشروبات لتنظيم الأصناف." />}</div>}
+      {tab === 'categories' && <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">{visibleCategories.map((category) => <article key={category.id} className="flex items-center gap-3 rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm"><span className="grid size-11 shrink-0 place-items-center rounded-xl bg-zinc-100 text-zinc-600"><FolderOpen size={18} /></span><div className="min-w-0 flex-1"><h2 className={`truncate font-semibold ${category.isActive ? 'text-zinc-900' : 'text-zinc-400'}`}>{category.nameAr}</h2><p className="truncate text-xs text-zinc-500">{category.nameEn}{!category.isActive && ' · مؤرشف'}</p></div><button onClick={() => openEdit('categories', category.id)} aria-label={`تعديل ${category.nameAr}`} className="grid size-10 shrink-0 place-items-center rounded-xl border border-zinc-200 text-zinc-600"><Pencil size={16} /></button><button onClick={() => setActive(CatalogResource.CATEGORY, category.id, !category.isActive)} aria-label={category.isActive ? 'أرشفة التصنيف' : 'إعادة تفعيل التصنيف'} className="grid size-10 shrink-0 place-items-center rounded-xl border border-zinc-200 text-zinc-600"><Archive size={16} /></button><button onClick={() => setDeleteTarget({ type: 'category', id: category.id, name: category.nameAr })} aria-label={`حذف ${category.nameAr}`} title="حذف التصنيف" className="grid size-10 shrink-0 place-items-center rounded-xl border border-zinc-200 text-rose-600 hover:bg-rose-50 hover:border-rose-300 transition"><Trash2 size={16} /></button></article>)}{visibleCategories.length === 0 && <EmptyState title="ابدأ بالتصنيفات" description="أنشئ تصنيفات مثل الوجبات والمشروبات لتنظيم الأصناف." />}</div>}
 
-      {tab === 'modifiers' && <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">{groups.filter((item) => `${item.nameAr} ${item.nameEn}`.toLowerCase().includes(query.toLowerCase())).map((group) => <article key={group.id} className="rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm sm:p-5"><div className="flex items-start justify-between gap-3"><div><h2 className="font-semibold text-zinc-950">{group.nameAr}</h2><p className="mt-1 text-xs text-zinc-500">اختيار {group.minSelect} إلى {group.maxSelect}</p></div><div className="flex gap-1"><button onClick={() => openEdit('modifiers', group.id)} aria-label={`تعديل ${group.nameAr}`} className="grid size-10 place-items-center rounded-xl border border-zinc-200 text-zinc-600"><Pencil size={16} /></button><button onClick={() => setActive(CatalogResource.MODIFIER_GROUP, group.id, false)} aria-label={`أرشفة ${group.nameAr}`} className="grid size-10 place-items-center rounded-xl border border-zinc-200 text-zinc-600"><Archive size={16} /></button><button onClick={() => setDeleteTarget({ type: 'modifier', id: group.id, name: group.nameAr })} aria-label={`حذف ${group.nameAr}`} title="حذف المجموعة" className="grid size-10 place-items-center rounded-xl border border-zinc-200 text-rose-600 hover:bg-rose-50 hover:border-rose-300 transition"><Trash2 size={16} /></button></div></div><div className="mt-4 space-y-2">{group.modifiers.map((modifier) => <div key={modifier.id} className="flex items-center justify-between rounded-lg bg-zinc-50 px-3 py-2 text-sm"><span className="text-zinc-700">{modifier.nameAr}</span><span className="text-xs font-medium text-zinc-500">{modifier.priceDelta ? `+ ${money(modifier.priceDelta, currency)}` : 'بدون زيادة'}</span></div>)}</div></article>)}{groups.length === 0 && <EmptyState title="لا توجد إضافات بعد" description="أنشئ مجموعات للإضافات، مثل اختيار الصصوص أو حجم المشروب." />}</div>}
+      {tab === 'modifiers' && <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">{visibleGroups.map((group) => <article key={group.id} className="rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm sm:p-5"><div className="flex items-start justify-between gap-3"><div><h2 className="font-semibold text-zinc-950">{group.nameAr}</h2><p className="mt-1 text-xs text-zinc-500">اختيار {group.minSelect} إلى {group.maxSelect}</p></div><div className="flex gap-1"><button onClick={() => openEdit('modifiers', group.id)} aria-label={`تعديل ${group.nameAr}`} className="grid size-10 place-items-center rounded-xl border border-zinc-200 text-zinc-600"><Pencil size={16} /></button><button onClick={() => setActive(CatalogResource.MODIFIER_GROUP, group.id, false)} aria-label={`أرشفة ${group.nameAr}`} className="grid size-10 place-items-center rounded-xl border border-zinc-200 text-zinc-600"><Archive size={16} /></button><button onClick={() => setDeleteTarget({ type: 'modifier', id: group.id, name: group.nameAr })} aria-label={`حذف ${group.nameAr}`} title="حذف المجموعة" className="grid size-10 place-items-center rounded-xl border border-zinc-200 text-rose-600 hover:bg-rose-50 hover:border-rose-300 transition"><Trash2 size={16} /></button></div></div><div className="mt-4 space-y-2">{group.modifiers.map((modifier) => <div key={modifier.id} className="flex items-center justify-between rounded-lg bg-zinc-50 px-3 py-2 text-sm"><span className="text-zinc-700">{modifier.nameAr}</span><span className="text-xs font-medium text-zinc-500">{modifier.priceDelta ? `+ ${money(modifier.priceDelta, currency)}` : 'بدون زيادة'}</span></div>)}</div></article>)}{visibleGroups.length === 0 && <EmptyState title="لا توجد إضافات بعد" description="أنشئ مجموعات للإضافات، مثل اختيار الصصوص أو حجم المشروب." />}</div>}
 
       {modal && <EditorModal title={editorTitle(modal, editingId)} onClose={close}>
         {error && <p role="alert" className="mb-4 rounded-xl border border-rose-200 bg-rose-50 px-3 py-2.5 text-sm text-rose-700">{error}</p>}

@@ -69,8 +69,8 @@ export default async function AdminOrdersPage() {
       initialMetrics={initialMetrics}
       branches={branchOptions}
       currencySymbol={setting?.currencySymbol || 'ج.م'}
-      restaurantNameAr={setting?.nameAr || 'قهوة كايرو'}
-      restaurantNameEn={setting?.nameEn || 'Qahwet Cairo'}
+      restaurantNameAr={setting?.nameAr || 'المطعم'}
+      restaurantNameEn={setting?.nameEn || 'Restaurant'}
       isBranchRestricted={isBranchRestricted}
       userBranchId={userBranchId}
       canAssignBranch={canManageAllBranches}

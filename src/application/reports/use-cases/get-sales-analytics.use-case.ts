@@ -68,8 +68,8 @@ export class GetSalesAnalyticsUseCase {
       ...(filter.branchId ? { branchId: filter.branchId } : {}),
     };
 
-    // 1. Database-level aggregation (Avoid N+1, GR-5)
-    const [aggregates, orders] = await Promise.all([
+    // 1. Database-level aggregation (Avoid N+1, GR-5 & Rule 5.3)
+    const [aggregates, channelGroups, paymentGroups, ordersTime] = await Promise.all([
       prisma.order.aggregate({
         where: whereClause,
         _count: { id: true },
@@ -81,12 +81,22 @@ export class GetSalesAnalyticsUseCase {
           deliveryFeeMinor: true,
         },
       }),
+      prisma.order.groupBy({
+        by: ['type'],
+        where: whereClause,
+        _count: { id: true },
+        _sum: { totalMinor: true },
+      }),
+      prisma.order.groupBy({
+        by: ['paymentMethod'],
+        where: whereClause,
+        _count: { id: true },
+        _sum: { totalMinor: true },
+      }),
       prisma.order.findMany({
         where: whereClause,
         select: {
           createdAt: true,
-          type: true,
-          paymentMethod: true,
           totalMinor: true,
         },
         orderBy: { createdAt: 'asc' },
@@ -104,12 +114,20 @@ export class GetSalesAnalyticsUseCase {
       ? Math.round(totalRevMoney.amount / totalOrders)
       : 0;
 
-    // 2. Channel Breakdown
+    // 2. Channel Breakdown via DB GroupBy
     const channels = {
       DINE_IN: { count: 0, totalMinor: 0 },
       TAKEAWAY: { count: 0, totalMinor: 0 },
       DELIVERY: { count: 0, totalMinor: 0 },
     };
+
+    for (const group of channelGroups) {
+      const orderType = group.type as keyof typeof channels;
+      if (channels[orderType]) {
+        channels[orderType].count = group._count.id;
+        channels[orderType].totalMinor = group._sum.totalMinor ?? 0;
+      }
+    }
 
     // 3. Hourly Breakdown (00:00 - 23:00)
     const hourlyMap = new Map<number, { count: number; totalMinor: number }>();
@@ -120,17 +138,7 @@ export class GetSalesAnalyticsUseCase {
     // 4. Daily Breakdown
     const dailyMap = new Map<string, { label: string; count: number; totalMinor: number }>();
 
-    // 5. Payment Breakdown
-    const paymentMap = new Map<string, { count: number; totalMinor: number }>();
-
-    for (const order of orders) {
-      // Channel
-      const orderType = order.type as keyof typeof channels;
-      if (channels[orderType]) {
-        channels[orderType].count += 1;
-        channels[orderType].totalMinor += order.totalMinor;
-      }
-
+    for (const order of ordersTime) {
       // Hour
       const hour = new Date(order.createdAt).getHours();
       const currentH = hourlyMap.get(hour) || { count: 0, totalMinor: 0 };
@@ -145,14 +153,14 @@ export class GetSalesAnalyticsUseCase {
       currentD.count += 1;
       currentD.totalMinor += order.totalMinor;
       dailyMap.set(dateKey, currentD);
-
-      // Payment
-      const method = order.paymentMethod || 'UNKNOWN';
-      const currentP = paymentMap.get(method) || { count: 0, totalMinor: 0 };
-      currentP.count += 1;
-      currentP.totalMinor += order.totalMinor;
-      paymentMap.set(method, currentP);
     }
+
+    // 5. Payment Breakdown via DB GroupBy
+    const payments: PaymentBreakdownItem[] = paymentGroups.map((group) => ({
+      method: group.paymentMethod || 'UNKNOWN',
+      count: group._count.id,
+      totalMinor: group._sum.totalMinor ?? 0,
+    }));
 
     const hourly: HourlyDistributionItem[] = Array.from(hourlyMap.entries()).map(([hour, data]) => ({
       hour,
@@ -164,12 +172,6 @@ export class GetSalesAnalyticsUseCase {
     const daily: DailyDistributionItem[] = Array.from(dailyMap.entries()).map(([date, data]) => ({
       date,
       label: data.label,
-      count: data.count,
-      totalMinor: data.totalMinor,
-    }));
-
-    const payments: PaymentBreakdownItem[] = Array.from(paymentMap.entries()).map(([method, data]) => ({
-      method,
       count: data.count,
       totalMinor: data.totalMinor,
     }));

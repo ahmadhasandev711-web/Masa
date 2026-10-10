@@ -49,7 +49,7 @@ export function StorefrontFooter({
             </p>
             <div className="inline-flex items-center gap-2 rounded-full border border-amber-500/30 bg-amber-500/10 px-3 py-1 text-2xs text-amber-400 font-mono">
               <Coffee className="h-3.5 w-3.5 text-amber-400" />
-              <span>{isAr ? 'قهوة كايرو • مفتوح 24 ساعة' : 'Qahwet Cairo • Open 24/7'}</span>
+              <span>{isAr ? `${restaurantNameAr} • مفتوح 24 ساعة` : `${restaurantNameEn} • Open 24/7`}</span>
             </div>
           </div>
 
@@ -71,12 +71,12 @@ export function StorefrontFooter({
               </li>
               <li>
                 <Link href="/about" className="hover:text-white transition-colors">
-                  {isAr ? 'عن قهوة كايرو' : 'Our Story'}
+                  {isAr ? `عن ${restaurantNameAr}` : 'Our Story'}
                 </Link>
               </li>
               <li>
                 <Link href="/branches" className="hover:text-white transition-colors">
-                  {isAr ? 'موقعنا في ستريب مول' : 'Our Location'}
+                  {isAr ? 'فروعنا ومواقعنا' : 'Our Locations'}
                 </Link>
               </li>
               <li>

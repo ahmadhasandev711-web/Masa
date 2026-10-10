@@ -56,8 +56,8 @@ export default async function AdminKitchenPage() {
     <KitchenKdsClient
       initialOrders={initialOrders}
       branches={branches}
-      restaurantNameAr={setting?.nameAr || 'قهوة كايرو'}
-      restaurantNameEn={setting?.nameEn || 'Qahwet Cairo'}
+      restaurantNameAr={setting?.nameAr || 'المطعم'}
+      restaurantNameEn={setting?.nameEn || 'Restaurant'}
       isBranchRestricted={isBranchRestricted}
       userBranchId={userBranchId}
     />

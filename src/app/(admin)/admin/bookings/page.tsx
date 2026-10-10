@@ -10,8 +10,8 @@ import { BookingsClient } from './bookings-client';
 export const dynamic = 'force-dynamic';
 
 export const metadata: Metadata = {
-  title: 'إدارة الحجوزات والفعاليات | قهوة كايرو',
-  description: 'متابعة وتأكيد طلبات الحجوزات والفعاليات الخاصة في قهوة كايرو',
+  title: 'إدارة الحجوزات والفعاليات | لوحة التحكم',
+  description: 'متابعة وتأكيد طلبات الحجوزات والفعاليات الخاصة في المطعم والفروع',
 };
 
 export default async function AdminBookingsPage() {

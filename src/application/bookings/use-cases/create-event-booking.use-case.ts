@@ -74,7 +74,7 @@ export class CreateEventBookingUseCase {
       day: 'numeric',
     });
 
-    const messageText = `مرحباً إدارة قهوة كايرو (Qahwet Cairo)،
+    const messageText = `مرحباً إدارة فرع ${branch.nameAr}،
 أود الاستفسار وتأكيد حجز طاولة / مناسبة خاصة:
 • الاسم: ${input.customerName}
 • رقم الهاتف: ${normalizedPhone}

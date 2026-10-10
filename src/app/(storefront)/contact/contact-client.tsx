@@ -72,11 +72,11 @@ export function ContactClient({
   const faqs = [
     {
       q: isAr
-        ? 'هل قهوة كايرو مفتوحة طوال الـ 24 ساعة؟'
-        : 'Is Qahwet Cairo open 24 hours every day?',
+        ? `هل ${brandName} مفتوح طوال الـ 24 ساعة؟`
+        : `Is ${brandName} open 24 hours every day?`,
       a: isAr
-        ? 'نعم بكل تأكيد! فرعنا في ستريب مول بالعاشر من رمضان يستقبلكم على مدار 24 ساعة طوال أيام الأسبوع لتقديم أرقى المشروبات والحلويات.'
-        : 'Yes, absolutely! Our Strip Mall branch in 10th of Ramadan City is open 24 hours, 7 days a week to welcome you anytime.',
+        ? 'نعم بكل تأكيد! فروعنا تستقبلكم على مدار 24 ساعة طوال أيام الأسبوع لتقديم أرقى المشروبات والحلويات.'
+        : 'Yes, absolutely! Our branches welcome you 24 hours, 7 days a week to enjoy fresh drinks and bakery anytime.',
     },
     {
       q: isAr
@@ -96,11 +96,11 @@ export function ContactClient({
     },
     {
       q: isAr
-        ? 'أين يقع فرع قهوة كايرو بالتحديد؟'
-        : 'Where is Qahwet Cairo located exactly?',
+        ? `أين تقع فروع ${brandName} بالتحديد؟`
+        : `Where is ${brandName} located exactly?`,
       a: isAr
-        ? 'يقع فرعنا في ستريب مول بمدينة العاشر من رمضان، بموقع متميز ومواقف سيارات واسعة.'
-        : 'Located conveniently in Strip Mall, 10th of Ramadan City, with ample parking and easy access.',
+        ? 'يمكنك الاطلاع على كافة مواقع فروعنا وتفاصيل الوصول ومواقف السيارات من صفحة الفروع.'
+        : 'You can explore all our branch locations and access details via the branches page.',
     },
   ];
 
@@ -188,7 +188,7 @@ export function ContactClient({
             </p>
             <div className="rounded-2xl border border-white/10 bg-zinc-900/50 p-5 space-y-3">
               <p className="text-xs font-bold text-white">
-                {isAr ? 'مميزات خدمات الضيافة في قهوة كايرو:' : 'Hospitality Advantages at Qahwet Cairo:'}
+                {isAr ? `مميزات خدمات الضيافة في ${brandName}:` : `Hospitality Advantages at ${brandName}:`}
               </p>
               <ul className="space-y-2 text-3xs text-zinc-300">
                 <li className="flex items-center gap-2">

@@ -54,8 +54,8 @@ type OrderTypeFilter = 'ALL' | 'DINE_IN' | 'TAKEAWAY' | 'DELIVERY';
 export function KitchenKdsClient({
   initialOrders,
   branches,
-  restaurantNameAr = 'قهوة كايرو',
-  restaurantNameEn = 'Qahwet Cairo',
+  restaurantNameAr = 'المطعم',
+  restaurantNameEn = 'Restaurant',
   isBranchRestricted = false,
   userBranchId = null,
 }: KitchenKdsClientProps) {

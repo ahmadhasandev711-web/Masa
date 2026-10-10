@@ -50,8 +50,8 @@ export class PrintTableBillUseCase {
 
     return {
       billHeader: {
-        restaurantNameAr: setting?.nameAr ?? 'قهوة كايرو',
-        restaurantNameEn: setting?.nameEn ?? 'Qahwet Cairo',
+        restaurantNameAr: setting?.nameAr ?? 'المطعم',
+        restaurantNameEn: setting?.nameEn ?? 'Restaurant',
         branchNameAr: table.branch.nameAr,
         branchNameEn: table.branch.nameEn,
         tableNumber: table.tableNumber,

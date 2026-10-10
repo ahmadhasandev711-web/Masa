@@ -194,7 +194,7 @@ export function BookingsClient({ initialBookings, branches, defaultBranchId }: B
 
             // Clean phone for WhatsApp
             const cleanPhone = booking.customerPhone.replace(/\D/g, '');
-            const waLink = `https://wa.me/${cleanPhone.startsWith('0') ? '2' + cleanPhone : cleanPhone}?text=${encodeURIComponent(`مرحباً أستاذ ${booking.customerName}، بخصوص طلب الحجز في قهوة كايرو:`)}`;
+            const waLink = `https://wa.me/${cleanPhone.startsWith('0') ? '2' + cleanPhone : cleanPhone}?text=${encodeURIComponent(`مرحباً أستاذ ${booking.customerName}، بخصوص طلب الحجز في ${booking.branch.nameAr}:`)}`;
 
             return (
               <article

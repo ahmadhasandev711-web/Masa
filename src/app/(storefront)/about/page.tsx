@@ -5,8 +5,8 @@ export default async function AboutPage() {
   const setting = await prisma.restaurantSetting.findFirst();
   return (
     <AboutClient
-      restaurantNameAr={setting?.nameAr ?? 'قهوة كايرو'}
-      restaurantNameEn={setting?.nameEn ?? 'Qahwet Cairo'}
+      restaurantNameAr={setting?.nameAr ?? 'المطعم'}
+      restaurantNameEn={setting?.nameEn ?? 'Restaurant'}
     />
   );
 }

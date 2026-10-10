@@ -56,13 +56,21 @@ export class TransferTableUseCase {
         },
       });
 
-      // 3. Occupy destination table with previous status (OCCUPIED or BILL_PRINTED)
-      const occupiedToTable = await tx.diningTable.update({
-        where: { id: toTable.id },
+      // 3. Occupy destination table with previous status atomically (OCCUPIED or BILL_PRINTED)
+      const updateToResult = await tx.diningTable.updateMany({
+        where: { id: toTable.id, status: TableStatus.AVAILABLE },
         data: {
           status: fromTable.status,
           activeOrderId: updatedOrder.id,
         },
+      });
+
+      if (updateToResult.count === 0) {
+        throw new ValidationError(`الطاولة المستهدفة ${toTable.tableNumber} تم شغلها من محطة أخرى`);
+      }
+
+      const occupiedToTable = await tx.diningTable.findUniqueOrThrow({
+        where: { id: toTable.id },
       });
 
       return {

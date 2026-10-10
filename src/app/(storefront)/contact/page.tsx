@@ -2,8 +2,8 @@ import { prisma } from '../../../infrastructure/db/prisma';
 import { ContactClient } from './contact-client';
 
 export const metadata = {
-  title: 'تواصل معنا | قهوة كايرو - ستريب مول العاشر من رمضان',
-  description: 'تواصل مع قهوة كايرو، ستريب مول - العاشر من رمضان. خدمة وضيافة على مدار 24 ساعة يومياً.',
+  title: 'تواصل معنا | فروعنا وأرقام الخدمة',
+  description: 'تواصل معنا مباشرة، تعرف على فروعنا وأرقام الخدمة ومواعيد العمل.',
 };
 
 export default async function ContactPage() {
@@ -19,8 +19,8 @@ export default async function ContactPage() {
   return (
     <ContactClient
       branches={branches}
-      restaurantNameAr={setting?.nameAr ?? 'قهوة كايرو'}
-      restaurantNameEn={setting?.nameEn ?? 'Qahwet Cairo'}
+      restaurantNameAr={setting?.nameAr ?? 'المطعم'}
+      restaurantNameEn={setting?.nameEn ?? 'Restaurant'}
       phone={setting?.phone}
       address={setting?.address}
     />

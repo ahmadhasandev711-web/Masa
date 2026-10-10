@@ -61,8 +61,8 @@ export function AboutClient({ restaurantNameAr, restaurantNameEn }: AboutClientP
       icon: Heart,
       title: isAr ? 'ضيافة مصرية وكرم استقبال' : 'Warm Egyptian Hospitality',
       description: isAr
-        ? 'فريق عمل ودود ومحترف يسعى لجعل كل زيارة لك في قهوة كايرو تجربة دافئة تشعرك بأنك في بيتك.'
-        : 'Friendly, attentive service dedicated to making every visit to Qahwet Cairo feel welcoming and homey.',
+        ? `فريق عمل ودود ومحترف يسعى لجعل كل زيارة لك في ${brandName} تجربة دافئة تشعرك بأنك في بيتك.`
+        : `Friendly, attentive service dedicated to making every visit to ${brandName} feel welcoming and homey.`,
     },
   ];
 
@@ -89,8 +89,8 @@ export function AboutClient({ restaurantNameAr, restaurantNameEn }: AboutClientP
           </h1>
           <p className="mx-auto mt-4 max-w-2xl text-sm leading-relaxed text-zinc-400 sm:text-base">
             {isAr
-              ? 'انطلقت قهوة كايرو برؤية تجمع بين سحر القهوة الشرقية الأصيلة وأرقى تقنيات القهوة المختصة، في مكان صُمم لراحتكم وهدوئكم على مدار 24 ساعة.'
-              : 'Qahwet Cairo blends authentic oriental coffee traditions with modern specialty brewing, inside a cozy haven open 24/7.'}
+              ? `انطلقت رؤيتنا في ${brandName} لتجمع بين سحر القهوة الشرقية الأصيلة وأرقى تقنيات القهوة المختصة، في مكان صُمم لراحتكم وهدوئكم على مدار 24 ساعة.`
+              : `${brandName} blends authentic oriental coffee traditions with modern specialty brewing, inside a cozy haven open 24/7.`}
           </p>
         </div>
       </section>
@@ -102,7 +102,7 @@ export function AboutClient({ restaurantNameAr, restaurantNameEn }: AboutClientP
           <div className="relative aspect-4/3 overflow-hidden rounded-3xl border border-white/10 shadow-2xl">
             <Image
               src="/storefront/images/cafe/cozy-seating.jpg"
-              alt={isAr ? 'أجواء قهوة كايرو' : 'Qahwet Cairo Ambiance'}
+              alt={isAr ? `أجواء ${brandName}` : `${brandName} Ambiance`}
               fill
               unoptimized
               className="object-cover"

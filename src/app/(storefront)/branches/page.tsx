@@ -13,8 +13,8 @@ export default async function BranchesPage() {
   return (
     <BranchesClient
       branches={branches}
-      restaurantNameAr={setting?.nameAr ?? 'قهوة كايرو'}
-      restaurantNameEn={setting?.nameEn ?? 'Qahwet Cairo'}
+      restaurantNameAr={setting?.nameAr ?? 'المطعم'}
+      restaurantNameEn={setting?.nameEn ?? 'Restaurant'}
     />
   );
 }

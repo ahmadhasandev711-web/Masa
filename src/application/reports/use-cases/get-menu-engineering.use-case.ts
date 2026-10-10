@@ -46,8 +46,9 @@ export class GetMenuEngineeringUseCase {
       },
     });
 
-    // 2. Fetch order items for completed orders in the timeframe
-    const orderItems = await prisma.orderItem.findMany({
+    // 2. Aggregate order items in DB by productId (Rule 5.3)
+    const orderItemsGrouped = await prisma.orderItem.groupBy({
+      by: ['productId'],
       where: {
         order: {
           createdAt: {
@@ -61,20 +62,19 @@ export class GetMenuEngineeringUseCase {
           ...(filter.branchId ? { branchId: filter.branchId } : {}),
         },
       },
-      select: {
-        productId: true,
+      _sum: {
         quantity: true,
         totalPriceMinor: true,
       },
     });
 
-    // 3. Aggregate sales by productId
+    // 3. Populate sales lookup map
     const salesMap = new Map<string, { quantity: number; revenueMinor: number }>();
-    for (const item of orderItems) {
-      const current = salesMap.get(item.productId) || { quantity: 0, revenueMinor: 0 };
-      current.quantity += item.quantity;
-      current.revenueMinor += item.totalPriceMinor;
-      salesMap.set(item.productId, current);
+    for (const item of orderItemsGrouped) {
+      salesMap.set(item.productId, {
+        quantity: item._sum.quantity ?? 0,
+        revenueMinor: item._sum.totalPriceMinor ?? 0,
+      });
     }
 
     // 4. Calculate performance & profitability for each product

@@ -60,9 +60,9 @@ export class CloseTableTabUseCase {
         });
       }
 
-      // Complete Order & Close Tab (Attributed to Active Settling Shift)
-      const completedOrder = await tx.order.update({
-        where: { id: order.id },
+      // Complete Order & Close Tab atomically (Attributed to Active Settling Shift)
+      const updateResult = await tx.order.updateMany({
+        where: { id: order.id, isTabOpen: true },
         data: {
           status: OrderStatus.COMPLETED,
           paymentStatus: PaymentStatus.PAID,
@@ -71,6 +71,14 @@ export class CloseTableTabUseCase {
           cashShiftId: validated.cashShiftId,
           cashierId: shift.cashierId,
         },
+      });
+
+      if (updateResult.count === 0) {
+        throw new ValidationError('تم إغلاق وتسوية هذا الشيك مسبقاً من محطة أخرى');
+      }
+
+      const completedOrder = await tx.order.findUniqueOrThrow({
+        where: { id: order.id },
       });
 
       // Free the Table to AVAILABLE
