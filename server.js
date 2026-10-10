@@ -25,6 +25,6 @@ app.prepare().then(() => {
       process.exit(1);
     })
     .listen(port, () => {
-      console.log(`> Qahwet Cairo server ready and listening on port ${port}`);
+      console.log(`> Production server ready and listening on port ${port}`);
     });
 });
