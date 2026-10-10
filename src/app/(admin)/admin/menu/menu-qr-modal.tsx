@@ -24,12 +24,17 @@ export function MenuQrModal({
   const [selectedBranchId] = useState(branches[0]?.id ?? '');
   const [template, setTemplate] = useState<TemplateType>('stand');
   const [copied, setCopied] = useState(false);
+  const [customUrl, setCustomUrl] = useState<string>('');
 
   // Compute live full URL on client
   const origin = typeof window !== 'undefined' ? window.location.origin : '';
-  const menuUrl = useMemo(() => {
+  const defaultMenuUrl = useMemo(() => {
     return origin ? `${origin}/menu` : '/menu';
   }, [origin]);
+
+  const menuUrl = customUrl.trim() || defaultMenuUrl;
+  const isLocalhost = menuUrl.includes('localhost') || menuUrl.includes('127.0.0.1');
+  const displayUrl = menuUrl.replace(/^https?:\/\//, '');
 
   const activeBranch = branches.find((b) => b.id === selectedBranchId) || branches[0];
 
@@ -145,6 +150,43 @@ export function MenuQrModal({
           </div>
         </div>
 
+        {/* URL Configuration Input Bar */}
+        <div className="border-b border-zinc-100 bg-white px-5 py-2.5 print:hidden">
+          <div className="flex flex-col sm:flex-row sm:items-center gap-2">
+            <label className="text-xs font-semibold text-zinc-700 shrink-0 flex items-center gap-1.5">
+              <Globe size={14} className="text-zinc-500" />
+              <span>رابط المنيو المستهدف:</span>
+            </label>
+            <div className="flex-1 flex items-center gap-2">
+              <input
+                type="url"
+                value={menuUrl}
+                onChange={(e) => setCustomUrl(e.target.value)}
+                placeholder="https://your-domain.com/menu"
+                className="w-full rounded-xl border border-zinc-200 bg-zinc-50 px-3 py-1.5 text-xs text-zinc-800 font-mono focus:border-zinc-900 focus:bg-white focus:outline-hidden transition"
+                dir="ltr"
+              />
+              {customUrl && (
+                <button
+                  type="button"
+                  onClick={() => setCustomUrl('')}
+                  className="shrink-0 text-2xs text-zinc-500 hover:text-zinc-800 underline"
+                >
+                  استعادة الافتراضي
+                </button>
+              )}
+            </div>
+          </div>
+          {isLocalhost && (
+            <div className="mt-2 rounded-lg bg-amber-50 border border-amber-200 p-2 text-2xs text-amber-800 flex items-start gap-1.5">
+              <span className="shrink-0 text-amber-600 font-bold">⚠️</span>
+              <span>
+                <strong>تنبيه للمعاينة من الهاتف:</strong> الرابط الحالي محلي ({menuUrl}). كاميرا الجوال لن تفتح روابط <code>localhost</code> إلا إذا كان الهاتف على نفس شبكة الواي فاي واستخدمت IP جهازك (مثال: <code>http://192.168.1.15:3000/menu</code>) أو رابط موقعك الحقيقي أونلاين.
+              </span>
+            </div>
+          )}
+        </div>
+
         {/* Live Printable Preview Area */}
         <div className="flex-1 overflow-y-auto p-6 flex items-center justify-center bg-zinc-100/60 print:bg-white print:p-0">
           {/* Printable Container */}
@@ -188,13 +230,13 @@ export function MenuQrModal({
                 </p>
 
                 {/* Footer details */}
-                <div className="w-full border-t border-zinc-100 pt-3 flex items-center justify-between text-3xs text-zinc-500 font-mono">
-                  <span className="flex items-center gap-1">
-                    <Globe size={11} />
-                    <span>{menuUrl.replace(/^https?:\/\//, '')}</span>
+                <div className="w-full border-t border-zinc-100 pt-3 flex items-center justify-between text-3xs text-zinc-500 font-mono gap-2">
+                  <span className="flex items-center gap-1 min-w-0" dir="ltr">
+                    <Globe size={11} className="shrink-0" />
+                    <span className="truncate max-w-[170px]" title={menuUrl}>{displayUrl}</span>
                   </span>
                   {activeBranch?.phone && (
-                    <span className="flex items-center gap-1" dir="ltr">
+                    <span className="flex items-center gap-1 shrink-0" dir="ltr">
                       <Phone size={11} />
                       <span>{activeBranch.phone}</span>
                     </span>
@@ -226,9 +268,11 @@ export function MenuQrModal({
                   <p className="text-3xs text-zinc-500 leading-relaxed mb-3">
                     امسح الرمز بكاميرا الجوال للوصول السريع إلى قائمة طعامنا وتتبع طلبك مباشرة.
                   </p>
-                  <div className="flex items-center justify-between text-3xs text-zinc-600 font-mono border-t border-zinc-100 pt-2">
-                    <span dir="ltr">{activeBranch?.phone || '01012345678'}</span>
-                    <span>{menuUrl.replace(/^https?:\/\//, '')}</span>
+                  <div className="flex items-center justify-between text-3xs text-zinc-600 font-mono border-t border-zinc-100 pt-2 gap-2">
+                    <span dir="ltr" className="shrink-0">{activeBranch?.phone || '01012345678'}</span>
+                    <span dir="ltr" className="truncate text-left max-w-[170px]" title={menuUrl}>
+                      {displayUrl}
+                    </span>
                   </div>
                 </div>
               </div>
