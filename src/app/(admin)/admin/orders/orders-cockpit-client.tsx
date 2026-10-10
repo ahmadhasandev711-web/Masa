@@ -1,26 +1,8 @@
 'use client';
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import {
-  ShoppingBag,
-  Clock,
-  Building2,
-  Phone,
-  MapPin,
-  RefreshCw,
-  Search,
-  Volume2,
-  VolumeX,
-  AlertCircle,
-  ChefHat,
-  Truck,
-  CheckCheck,
-  Eye,
-  DollarSign,
-  Bike,
-  Calendar,
-} from 'lucide-react';
-import { OrderStatus, PaymentMethod } from '../../../../domain/ordering/enums';
+import { ShoppingBag } from 'lucide-react';
+import { OrderStatus } from '../../../../domain/ordering/enums';
 import {
   listOrdersAction,
   getOrdersMetricsAction,
@@ -33,6 +15,10 @@ import { DispatchModal } from './components/dispatch-modal';
 import { FleetManagementModal } from './components/fleet-management-modal';
 import { DriverSettlementReceipt, DriverSettlementPrintData } from './components/driver-settlement-receipt';
 import { KitchenOrderTicketPrint, KitchenTicketData } from '../../../../components/printing/kitchen-order-ticket';
+import { OrdersHeader } from './components/orders-header';
+import { OrdersKpiSummary } from './components/orders-kpi-summary';
+import { OrdersFilterToolbar } from './components/orders-filter-toolbar';
+import { OrderOperationalCard } from './components/order-operational-card';
 
 interface OrdersCockpitClientProps {
   initialOrders: DetailedOrder[];
@@ -360,330 +346,49 @@ export function OrdersCockpitClient({
   return (
     <div className="space-y-6" dir="rtl">
       {/* 1. Header & Controls */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-zinc-200 pb-5">
-        <div>
-          <div className="flex items-center gap-2.5">
-            <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-zinc-900">
-              مركز إدارة الطلبات الإلكترونية
-            </h1>
-            {metrics.pendingCount > 0 && (
-              <span className="relative flex h-3 w-3">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
-                <span className="relative inline-flex rounded-full h-3 w-3 bg-blue-600"></span>
-              </span>
-            )}
-          </div>
-          <p className="text-xs sm:text-sm text-zinc-500 mt-1">
-            قمرة القيادة الحية لمتابعة تدفق طلبات التوصيل وإسنادها للفروع لحظة بلحظة.
-          </p>
-        </div>
-
-        {/* Live Controls */}
-        <div className="flex items-center gap-2">
-          {/* Sound Toggle */}
-          <button
-            type="button"
-            onClick={toggleSound}
-            className={`p-2 rounded-lg border text-xs font-semibold flex items-center gap-1.5 transition ${
-              isMuted
-                ? 'border-zinc-200 text-zinc-400 bg-zinc-50 hover:bg-zinc-100'
-                : 'border-blue-200 text-blue-700 bg-blue-50 hover:bg-blue-100'
-            }`}
-            title={isMuted ? 'تفعيل التنبيه الصوتي عند وصول طلب جديد' : 'كتم التنبيه الصوتي'}
-          >
-            {isMuted ? <VolumeX className="w-4 h-4" /> : <Volume2 className="w-4 h-4" />}
-            <span className="hidden md:inline">{isMuted ? 'صامت' : 'التنبيه نشط'}</span>
-          </button>
-
-          {/* Auto Refresh Toggle */}
-          <button
-            type="button"
-            onClick={() => setAutoRefreshEnabled(!autoRefreshEnabled)}
-            className={`px-2.5 py-1.5 rounded-lg border text-xs font-medium transition ${
-              autoRefreshEnabled
-                ? 'border-emerald-200 text-emerald-800 bg-emerald-50'
-                : 'border-zinc-200 text-zinc-500 bg-zinc-50'
-            }`}
-          >
-            {autoRefreshEnabled ? 'تحديث تلقائي (20ث)' : 'التحديث معطل'}
-          </button>
-
-          {/* Fleet Management Button */}
-          {activeFleetBranchId && (
-            <button
-              type="button"
-              onClick={() => setIsFleetModalOpen(true)}
-              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-purple-700 bg-purple-50 border border-purple-200 rounded-lg hover:bg-purple-100 transition shadow-2xs"
-              title="إدارة أسطول الكباتن وإقفال العهدة النقدية"
-            >
-              <Bike className="w-4 h-4 text-purple-600" />
-              <span className="hidden md:inline">أسطول التوصيل والطيارين</span>
-            </button>
-          )}
-
-          {/* Manual Refresh Button */}
-          <button
-            type="button"
-            onClick={() => fetchData(false)}
-            disabled={isRefreshing}
-            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-zinc-700 bg-white border border-zinc-200 rounded-lg hover:bg-zinc-100 transition disabled:opacity-50"
-            title="تحديث البيانات فوراً"
-          >
-            <RefreshCw className={`w-3.5 h-3.5 ${isRefreshing ? 'animate-spin text-zinc-900' : ''}`} />
-            <span>تحديث</span>
-          </button>
-        </div>
-      </div>
+      <OrdersHeader
+        pendingCount={metrics.pendingCount}
+        isMuted={isMuted}
+        toggleSound={toggleSound}
+        autoRefreshEnabled={autoRefreshEnabled}
+        setAutoRefreshEnabled={setAutoRefreshEnabled}
+        activeFleetBranchId={activeFleetBranchId}
+        onOpenFleetModal={() => setIsFleetModalOpen(true)}
+        isRefreshing={isRefreshing}
+        onRefresh={() => fetchData(false)}
+      />
 
       {/* 2. Top KPI Cards */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4">
-        {/* Pending Orders */}
-        <div
-          onClick={() => handleFilterChange(OrderStatus.PENDING)}
-          className={`cursor-pointer p-4 rounded-xl border transition shadow-2xs ${
-            selectedStatus === OrderStatus.PENDING
-              ? 'border-blue-500 bg-blue-50/50 ring-2 ring-blue-500/20'
-              : 'border-zinc-200 bg-white hover:border-zinc-300'
-          }`}
-        >
-          <div className="flex items-center justify-between text-xs text-zinc-500 mb-1">
-            <span>طلبات معلقة جديدة</span>
-            <div className={`w-2 h-2 rounded-full ${metrics.pendingCount > 0 ? 'bg-blue-600 animate-pulse' : 'bg-zinc-300'}`} />
-          </div>
-          <div className="text-2xl font-bold text-zinc-900">{metrics.pendingCount}</div>
-          <span className="text-[11px] text-zinc-500">تحتاج مراجعة وإسناد</span>
-        </div>
-
-        {/* Preparing */}
-        <div
-          onClick={() => handleFilterChange(OrderStatus.PREPARING)}
-          className={`cursor-pointer p-4 rounded-xl border transition shadow-2xs ${
-            selectedStatus === OrderStatus.PREPARING
-              ? 'border-orange-500 bg-orange-50/50 ring-2 ring-orange-500/20'
-              : 'border-zinc-200 bg-white hover:border-zinc-300'
-          }`}
-        >
-          <div className="flex items-center justify-between text-xs text-zinc-500 mb-1">
-            <span>قيد التجهيز بالمطبخ</span>
-            <ChefHat className="w-3.5 h-3.5 text-orange-600" />
-          </div>
-          <div className="text-2xl font-bold text-zinc-900">{metrics.preparingCount}</div>
-          <span className="text-[11px] text-zinc-500">في المطابخ حالياً</span>
-        </div>
-
-        {/* In Delivery */}
-        <div
-          onClick={() => handleFilterChange(OrderStatus.OUT_FOR_DELIVERY)}
-          className={`cursor-pointer p-4 rounded-xl border transition shadow-2xs ${
-            selectedStatus === OrderStatus.OUT_FOR_DELIVERY
-              ? 'border-purple-500 bg-purple-50/50 ring-2 ring-purple-500/20'
-              : 'border-zinc-200 bg-white hover:border-zinc-300'
-          }`}
-        >
-          <div className="flex items-center justify-between text-xs text-zinc-500 mb-1">
-            <span>مع المندوب</span>
-            <Truck className="w-3.5 h-3.5 text-purple-600" />
-          </div>
-          <div className="text-2xl font-bold text-zinc-900">{metrics.inDeliveryCount}</div>
-          <span className="text-[11px] text-zinc-500">في طريقها للزبائن</span>
-        </div>
-
-        {/* Delivered Today */}
-        <div
-          onClick={() => handleFilterChange(OrderStatus.DELIVERED)}
-          className={`cursor-pointer p-4 rounded-xl border transition shadow-2xs ${
-            selectedStatus === OrderStatus.DELIVERED
-              ? 'border-emerald-500 bg-emerald-50/50 ring-2 ring-emerald-500/20'
-              : 'border-zinc-200 bg-white hover:border-zinc-300'
-          }`}
-        >
-          <div className="flex items-center justify-between text-xs text-zinc-500 mb-1">
-            <span>تم تسليمها اليوم</span>
-            <CheckCheck className="w-3.5 h-3.5 text-emerald-600" />
-          </div>
-          <div className="text-2xl font-bold text-zinc-900">{metrics.deliveredTodayCount}</div>
-          <span className="text-[11px] text-zinc-500">طلبات مكتملة بنجاح</span>
-        </div>
-
-        {/* Sales Today */}
-        <div className="col-span-2 sm:col-span-1 p-4 rounded-xl border border-zinc-200 bg-white shadow-2xs">
-          <div className="flex items-center justify-between text-xs text-zinc-500 mb-1">
-            <span>مبيعات اليوم المحققة</span>
-            <DollarSign className="w-3.5 h-3.5 text-zinc-700" />
-          </div>
-          <div className="text-2xl font-bold text-zinc-900">
-            {formatMoney(metrics.todaySalesMinor)}
-            <span className="text-xs font-normal text-zinc-500 mr-1">{currencySymbol}</span>
-          </div>
-          <span className="text-[11px] text-zinc-500">للطلبات المسلمة</span>
-        </div>
-      </div>
+      <OrdersKpiSummary
+        metrics={metrics}
+        selectedStatus={selectedStatus}
+        onFilterChange={handleFilterChange}
+        currencySymbol={currencySymbol}
+        formatMoney={formatMoney}
+      />
 
       {/* 3. Filters & Date Navigation */}
-      <div className="space-y-3">
-        {/* Date Filter Bar */}
-        <div className="rounded-xl border border-zinc-200 bg-white p-3 sm:p-4 shadow-2xs">
-          <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-            {/* Quick Presets */}
-            <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
-              <span className="text-xs font-semibold text-zinc-500 flex items-center gap-1.5 ml-1">
-                <Calendar className="h-4 w-4 text-zinc-400" />
-                <span>الفترة:</span>
-              </span>
-              <button
-                type="button"
-                onClick={() => handlePresetChange('today')}
-                className={`rounded-lg px-3 py-1.5 text-xs font-semibold transition ${
-                  datePreset === 'today'
-                    ? 'bg-zinc-900 text-white shadow-xs'
-                    : 'bg-zinc-100 text-zinc-700 hover:bg-zinc-200'
-                }`}
-              >
-                اليوم
-              </button>
-              <button
-                type="button"
-                onClick={() => handlePresetChange('week')}
-                className={`rounded-lg px-3 py-1.5 text-xs font-semibold transition ${
-                  datePreset === 'week'
-                    ? 'bg-zinc-900 text-white shadow-xs'
-                    : 'bg-zinc-100 text-zinc-700 hover:bg-zinc-200'
-                }`}
-              >
-                آخر 7 أيام
-              </button>
-              <button
-                type="button"
-                onClick={() => handlePresetChange('month')}
-                className={`rounded-lg px-3 py-1.5 text-xs font-semibold transition ${
-                  datePreset === 'month'
-                    ? 'bg-zinc-900 text-white shadow-xs'
-                    : 'bg-zinc-100 text-zinc-700 hover:bg-zinc-200'
-                }`}
-              >
-                هذا الشهر
-              </button>
-            </div>
-
-            {/* Date inputs (من / إلى) & Active Filter Summary */}
-            <div className="flex flex-wrap items-center gap-2 sm:gap-3">
-              <div className="flex items-center gap-1.5">
-                <label htmlFor="orders-start-date" className="text-xs text-zinc-500 font-medium">من:</label>
-                <input
-                  id="orders-start-date"
-                  type="date"
-                  value={startDateStr}
-                  onChange={(e) => handleCustomDateChange(e.target.value, endDateStr)}
-                  className="rounded-lg border border-zinc-200 px-2.5 py-1.5 text-xs text-zinc-800 bg-white focus:border-zinc-900 focus:outline-hidden"
-                />
-              </div>
-              <div className="flex items-center gap-1.5">
-                <label htmlFor="orders-end-date" className="text-xs text-zinc-500 font-medium">إلى:</label>
-                <input
-                  id="orders-end-date"
-                  type="date"
-                  value={endDateStr}
-                  onChange={(e) => handleCustomDateChange(startDateStr, e.target.value)}
-                  className="rounded-lg border border-zinc-200 px-2.5 py-1.5 text-xs text-zinc-800 bg-white focus:border-zinc-900 focus:outline-hidden"
-                />
-              </div>
-
-              {/* Volume summary badge */}
-              <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-zinc-50 border border-zinc-200/80 text-xs">
-                <span className="text-zinc-500">الطلبات:</span>
-                <span className="font-bold text-zinc-900">{orders.length}</span>
-                <span className="text-zinc-300">|</span>
-                <span className="text-zinc-500">القيمة:</span>
-                <span className="font-bold text-zinc-900 font-mono">
-                  {formatMoney(ordersTotalMinor)} {currencySymbol}
-                </span>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Status Navigation Tabs */}
-        <div className="flex items-center gap-1.5 overflow-x-auto pb-1 border-b border-zinc-200 text-xs">
-          {[
-            { id: 'ALL', label: 'جميع الطلبات' },
-            { id: OrderStatus.PENDING, label: 'جديدة قيد المراجعة', badge: metrics.pendingCount },
-            { id: OrderStatus.CONFIRMED, label: 'مؤكدة' },
-            { id: OrderStatus.PREPARING, label: 'جاري التجهيز' },
-            { id: OrderStatus.READY_FOR_PICKUP, label: 'جاهزة للتوصيل' },
-            { id: OrderStatus.OUT_FOR_DELIVERY, label: 'مع المندوب' },
-            { id: OrderStatus.DELIVERED, label: 'تم التسليم' },
-            { id: OrderStatus.CANCELLED, label: 'ملغاة / مرفوضة' },
-          ].map((tab) => {
-            const isActive = selectedStatus === tab.id;
-            return (
-              <button
-                key={tab.id}
-                type="button"
-                onClick={() => setSelectedStatus(tab.id)}
-                className={`flex items-center gap-1.5 whitespace-nowrap px-3.5 py-2 font-semibold rounded-lg transition ${
-                  isActive
-                    ? 'bg-zinc-900 text-white'
-                    : 'text-zinc-600 hover:bg-zinc-100 hover:text-zinc-900'
-                }`}
-              >
-                <span>{tab.label}</span>
-                {typeof tab.badge === 'number' && tab.badge > 0 && (
-                  <span
-                    className={`px-1.5 py-0.2 rounded-full text-[10px] font-bold ${
-                      isActive ? 'bg-white text-zinc-900' : 'bg-blue-100 text-blue-800'
-                    }`}
-                  >
-                    {tab.badge}
-                  </span>
-                )}
-              </button>
-            );
-          })}
-        </div>
-
-        {/* Search & Branch Select row */}
-        <div className="flex flex-col sm:flex-row items-center gap-3">
-          {/* Search Input */}
-          <div className="relative flex-1 w-full">
-            <Search className="w-4 h-4 absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400" />
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="البحث برقم الطلب، هاتف العميل، أو الاسم..."
-              className="w-full text-xs pr-9 pl-3 py-2 rounded-lg border border-zinc-200 focus:outline-none focus:ring-1 focus:ring-zinc-900 bg-white"
-            />
-          </div>
-
-          {/* Branch Filter: Locked Badge for branch staff, Dropdown for central management */}
-          {isBranchRestricted ? (
-            <div className="flex items-center gap-2 px-3 py-2 rounded-lg border border-zinc-200 bg-zinc-50 text-xs text-zinc-700 w-full sm:w-auto">
-              <Building2 className="w-4 h-4 text-zinc-500 shrink-0" />
-              <span className="text-zinc-500">نطاق فرعك:</span>
-              <span className="font-semibold text-zinc-900">
-                {branches.find((b) => b.id === userBranchId)?.nameAr ?? 'الفرع المحدد'}
-              </span>
-            </div>
-          ) : (
-            <div className="flex items-center gap-2 w-full sm:w-auto">
-              <Building2 className="w-4 h-4 text-zinc-400 shrink-0 hidden sm:block" />
-              <select
-                value={selectedBranchId}
-                onChange={(e) => setSelectedBranchId(e.target.value)}
-                className="w-full sm:w-48 text-xs border border-zinc-200 rounded-lg px-2.5 py-2 bg-white focus:outline-none focus:ring-1 focus:ring-zinc-900"
-              >
-                <option value="ALL">جميع الفروع</option>
-                <option value="UNASSIGNED">طلبات غير مسندة لفرع</option>
-                {branches.map((b) => (
-                  <option key={b.id} value={b.id}>
-                    فرع {b.nameAr}
-                  </option>
-                ))}
-              </select>
-            </div>
-          )}
-        </div>
-      </div>
+      <OrdersFilterToolbar
+        datePreset={datePreset}
+        onPresetChange={handlePresetChange}
+        startDateStr={startDateStr}
+        endDateStr={endDateStr}
+        onCustomDateChange={handleCustomDateChange}
+        ordersCount={orders.length}
+        ordersTotalMinor={ordersTotalMinor}
+        formatMoney={formatMoney}
+        currencySymbol={currencySymbol}
+        selectedStatus={selectedStatus}
+        onStatusSelect={(status) => setSelectedStatus(status)}
+        metrics={metrics}
+        searchQuery={searchQuery}
+        onSearchChange={(q) => setSearchQuery(q)}
+        isBranchRestricted={isBranchRestricted}
+        userBranchId={userBranchId}
+        selectedBranchId={selectedBranchId}
+        onBranchChange={(branchId) => setSelectedBranchId(branchId)}
+        branches={branches}
+      />
 
       {/* 4. Operational Cards Grid */}
       {orders.length === 0 ? (
@@ -698,193 +403,25 @@ export function OrdersCockpitClient({
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-          {orders.map((order) => {
-            const badge = getStatusBadge(order.status);
-            const isUnassigned = !order.branchId;
-
-            return (
-              <div
-                key={order.id}
-                className="bg-white rounded-xl border border-zinc-200 hover:border-zinc-300 transition shadow-xs flex flex-col justify-between overflow-hidden"
-              >
-                {/* Card Header */}
-                <div className="p-4 border-b border-zinc-100 space-y-2">
-                  <div className="flex items-center justify-between">
-                    <span className="font-mono text-sm font-bold text-zinc-950">
-                      {order.orderNumber}
-                    </span>
-                    <span className={`px-2 py-0.5 rounded-full text-[11px] font-semibold border ${badge.cls}`}>
-                      {badge.label}
-                    </span>
-                  </div>
-
-                  <div className="flex items-center justify-between text-[11px] text-zinc-500">
-                    <span className="flex items-center gap-1 font-medium">
-                      <Clock className="w-3 h-3 text-zinc-400" />
-                      {formatTimeAgo(order.createdAt)}
-                    </span>
-                    <span>{order.paymentMethod === PaymentMethod.CASH ? 'دفع عند الاستلام' : order.paymentMethod}</span>
-                  </div>
-                </div>
-
-                {/* Card Body */}
-                <div className="p-4 space-y-3 flex-1 text-xs">
-                  {/* Customer Info */}
-                  <div className="space-y-1">
-                    <div className="flex items-center justify-between">
-                      <span className="font-bold text-zinc-900">{order.customerName}</span>
-                      <a
-                        href={`tel:${order.customerPhone}`}
-                        className="text-zinc-600 hover:text-emerald-700 font-mono text-[11px] flex items-center gap-1"
-                        dir="ltr"
-                        onClick={(e) => e.stopPropagation()}
-                      >
-                        <Phone className="w-3 h-3 text-zinc-400" />
-                        <span>{order.customerPhone}</span>
-                      </a>
-                    </div>
-                    {order.deliveryAddress && (
-                      <div className="flex items-start gap-1 text-zinc-600 text-[11px]">
-                        <MapPin className="w-3.5 h-3.5 text-zinc-400 shrink-0 mt-0.5" />
-                        <span className="line-clamp-1">{order.deliveryAddress}</span>
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Branch Assignment Status */}
-                  <div className="pt-1 flex flex-wrap items-center gap-1.5">
-                    {order.branch ? (
-                      <div className="inline-flex items-center gap-1.5 px-2 py-1 rounded bg-zinc-50 border border-zinc-200 text-zinc-700 text-[11px]">
-                        <Building2 className="w-3 h-3 text-zinc-500" />
-                        <span>فرع: {order.branch.nameAr}</span>
-                      </div>
-                    ) : (
-                      <div className="inline-flex items-center gap-1 px-2 py-1 rounded bg-rose-50 border border-rose-200 text-rose-700 text-[11px] font-semibold">
-                        <AlertCircle className="w-3 h-3" />
-                        <span>غير مسند لفرع حتى الآن!</span>
-                      </div>
-                    )}
-
-                    {order.driverName && (
-                      <div className="inline-flex items-center gap-1 px-2 py-1 rounded bg-purple-50 border border-purple-200 text-purple-800 text-[11px] font-semibold">
-                        <Bike className="w-3 h-3 text-purple-600" />
-                        <span>كابتن: {order.driverName}</span>
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Items Preview */}
-                  <div className="bg-zinc-50/60 p-2.5 rounded-lg border border-zinc-100 text-[11px] space-y-1">
-                    <span className="font-semibold text-zinc-700 block">
-                      الأصناف ({order.items.reduce((s, i) => s + i.quantity, 0)} قطع):
-                    </span>
-                    <ul className="text-zinc-600 space-y-0.5">
-                      {order.items.slice(0, 2).map((item) => (
-                        <li key={item.id} className="truncate">
-                          • {item.productNameAr} {item.sizeNameAr && `(${item.sizeNameAr})`} × {item.quantity}
-                        </li>
-                      ))}
-                      {order.items.length > 2 && (
-                        <li className="text-[10px] text-zinc-400 font-medium">
-                          + {order.items.length - 2} أصناف أخرى...
-                        </li>
-                      )}
-                    </ul>
-                  </div>
-                </div>
-
-                {/* Card Footer (Price & Quick Actions) */}
-                <div className="p-3 bg-zinc-50/60 border-t border-zinc-100 flex items-center justify-between gap-2">
-                  <div className="text-left">
-                    <span className="text-[10px] text-zinc-400 block">الإجمالي:</span>
-                    <span className="text-sm font-bold text-zinc-950">
-                      {formatMoney(order.totalMinor)} {currencySymbol}
-                    </span>
-                  </div>
-
-                  <div className="flex items-center gap-1.5">
-                    {/* Primary Status Step Button */}
-                    {order.status === OrderStatus.PENDING && (
-                      <button
-                        type="button"
-                        onClick={() => handleUpdateStatus(order.id, OrderStatus.CONFIRMED)}
-                        className="px-2.5 py-1.5 text-xs font-semibold rounded-lg bg-amber-600 text-white hover:bg-amber-700 transition"
-                      >
-                        تأكيد
-                      </button>
-                    )}
-
-                    {order.status === OrderStatus.CONFIRMED && (
-                      <button
-                        type="button"
-                        onClick={() => {
-                          if (isUnassigned) {
-                            setActiveModalOrder(order);
-                          } else {
-                            handleUpdateStatus(order.id, OrderStatus.PREPARING);
-                          }
-                        }}
-                        className={`px-2.5 py-1.5 text-xs font-semibold rounded-lg text-white transition ${
-                          isUnassigned
-                            ? 'bg-zinc-800 hover:bg-zinc-900'
-                            : 'bg-orange-600 hover:bg-orange-700'
-                        }`}
-                      >
-                        {isUnassigned ? 'إسناد فرع' : 'تجهيز بالمطبخ'}
-                      </button>
-                    )}
-
-                    {order.status === OrderStatus.PREPARING && (
-                      <button
-                        type="button"
-                        onClick={() => handleUpdateStatus(order.id, OrderStatus.READY_FOR_PICKUP)}
-                        className="px-2.5 py-1.5 text-xs font-semibold rounded-lg bg-indigo-600 text-white hover:bg-indigo-700 transition"
-                      >
-                        جاهز للتوصيل
-                      </button>
-                    )}
-
-                    {order.status === OrderStatus.READY_FOR_PICKUP && (
-                      <button
-                        type="button"
-                        onClick={() => {
-                          if (!order.branchId) {
-                            setActiveModalOrder(order);
-                          } else {
-                            setDispatchingOrder(order);
-                          }
-                        }}
-                        className="flex items-center gap-1 px-2.5 py-1.5 text-xs font-semibold rounded-lg bg-purple-600 text-white hover:bg-purple-700 transition"
-                      >
-                        <Bike className="w-3.5 h-3.5" />
-                        <span>مع المندوب</span>
-                      </button>
-                    )}
-
-                    {order.status === OrderStatus.OUT_FOR_DELIVERY && (
-                      <button
-                        type="button"
-                        onClick={() => handleUpdateStatus(order.id, OrderStatus.DELIVERED)}
-                        className="px-2.5 py-1.5 text-xs font-semibold rounded-lg bg-emerald-600 text-white hover:bg-emerald-700 transition"
-                      >
-                        تم التسليم
-                      </button>
-                    )}
-
-                    {/* View Details / Modal Trigger */}
-                    <button
-                      type="button"
-                      onClick={() => setActiveModalOrder(order)}
-                      className="flex items-center gap-1 px-2.5 py-1.5 text-xs font-semibold rounded-lg border border-zinc-200 bg-white text-zinc-700 hover:bg-zinc-100 transition"
-                    >
-                      <Eye className="w-3.5 h-3.5 text-zinc-500" />
-                      <span>تفاصيل</span>
-                    </button>
-                  </div>
-                </div>
-              </div>
-            );
-          })}
+          {orders.map((order) => (
+            <OrderOperationalCard
+              key={order.id}
+              order={order}
+              currencySymbol={currencySymbol}
+              formatMoney={formatMoney}
+              formatTimeAgo={formatTimeAgo}
+              getStatusBadge={getStatusBadge}
+              onUpdateStatus={handleUpdateStatus}
+              onViewDetails={(ord) => setActiveModalOrder(ord)}
+              onStartDispatch={(ord) => {
+                if (!ord.branchId) {
+                  setActiveModalOrder(ord);
+                } else {
+                  setDispatchingOrder(ord);
+                }
+              }}
+            />
+          ))}
         </div>
       )}
 

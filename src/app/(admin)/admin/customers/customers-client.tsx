@@ -103,6 +103,10 @@ export function CustomersClient({
   const [addrNotes, setAddrNotes] = useState('');
   const [addrIsDefault, setAddrIsDefault] = useState(false);
 
+  // Pagination & Filtering state
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(20);
+
   // Filtered customers
   const filteredCustomers = customers.filter((c) => {
     if (!searchTerm.trim()) return true;
@@ -113,6 +117,14 @@ export function CustomersClient({
       (c.email && c.email.toLowerCase().includes(term))
     );
   });
+
+  const totalFiltered = filteredCustomers.length;
+  const totalPages = Math.max(1, Math.ceil(totalFiltered / pageSize));
+  const validCurrentPage = Math.min(currentPage, totalPages);
+  const paginatedCustomers = filteredCustomers.slice(
+    (validCurrentPage - 1) * pageSize,
+    validCurrentPage * pageSize
+  );
 
   // Calculate totals
   const totalOrdersSum = customers.reduce((acc, c) => acc + c.totalOrders, 0);
@@ -434,13 +446,19 @@ export function CustomersClient({
         <input
           type="text"
           value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
+          onChange={(e) => {
+            setSearchTerm(e.target.value);
+            setCurrentPage(1);
+          }}
           placeholder="البحث بالاسم، برقم الهاتف، أو البريد الإلكتروني..."
           className="w-full bg-transparent text-sm text-zinc-900 placeholder:text-zinc-400 focus:outline-hidden"
         />
         {searchTerm && (
           <button
-            onClick={() => setSearchTerm('')}
+            onClick={() => {
+              setSearchTerm('');
+              setCurrentPage(1);
+            }}
             className="text-xs text-zinc-400 hover:text-zinc-600"
           >
             مسح
@@ -473,7 +491,7 @@ export function CustomersClient({
                 </tr>
               </thead>
               <tbody className="divide-y divide-zinc-100">
-                {filteredCustomers.map((cust) => {
+                {paginatedCustomers.map((cust) => {
                   const addressCount = cust.addresses?.length ?? cust._count?.addresses ?? 0;
                   const defaultAddress = cust.addresses?.find((a) => a.isDefault) ?? cust.addresses?.[0];
 
@@ -536,6 +554,56 @@ export function CustomersClient({
                 })}
               </tbody>
             </table>
+          </div>
+        )}
+
+        {/* Pagination Footer */}
+        {totalFiltered > 0 && (
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-3 border-t border-zinc-100 bg-zinc-50/50 px-4 py-3 text-xs text-zinc-600">
+            <div className="flex items-center gap-2">
+              <span>
+                عرض {Math.min((validCurrentPage - 1) * pageSize + 1, totalFiltered)} إلى{' '}
+                {Math.min(validCurrentPage * pageSize, totalFiltered)} من أصل {totalFiltered} عميل
+              </span>
+              <span className="text-zinc-300">|</span>
+              <label className="flex items-center gap-1.5 text-zinc-500">
+                <span>لكل صفحة:</span>
+                <select
+                  value={pageSize}
+                  onChange={(e) => {
+                    setPageSize(Number(e.target.value));
+                    setCurrentPage(1);
+                  }}
+                  className="rounded-md border border-zinc-200 bg-white px-2 py-1 text-xs text-zinc-800"
+                >
+                  <option value={10}>10</option>
+                  <option value={20}>20</option>
+                  <option value={50}>50</option>
+                </select>
+              </label>
+            </div>
+
+            <div className="flex items-center gap-1.5">
+              <button
+                type="button"
+                onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                disabled={validCurrentPage <= 1}
+                className="rounded-md border border-zinc-200 bg-white px-2.5 py-1 font-medium hover:bg-zinc-100 disabled:opacity-40 transition"
+              >
+                السابق
+              </button>
+              <span className="px-2 font-medium">
+                صفحة {validCurrentPage} من {totalPages}
+              </span>
+              <button
+                type="button"
+                onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                disabled={validCurrentPage >= totalPages}
+                className="rounded-md border border-zinc-200 bg-white px-2.5 py-1 font-medium hover:bg-zinc-100 disabled:opacity-40 transition"
+              >
+                التالي
+              </button>
+            </div>
           </div>
         )}
       </div>

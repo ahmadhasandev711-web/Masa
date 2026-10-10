@@ -81,6 +81,9 @@ export function InventoryClient({ initialData }: { initialData: InventoryPageDat
   );
 
   // Filtered Stock
+  const [stockPage, setStockPage] = useState(1);
+  const [stockPageSize, setStockPageSize] = useState(20);
+
   const filteredStock = initialData.stock.filter((s) => {
     const matchesSearch =
       s.nameAr.toLowerCase().includes(stockSearch.toLowerCase()) ||
@@ -93,6 +96,14 @@ export function InventoryClient({ initialData }: { initialData: InventoryPageDat
     return true;
   });
 
+  const totalStockFiltered = filteredStock.length;
+  const totalStockPages = Math.max(1, Math.ceil(totalStockFiltered / stockPageSize));
+  const validStockPage = Math.min(stockPage, totalStockPages);
+  const paginatedStock = filteredStock.slice(
+    (validStockPage - 1) * stockPageSize,
+    validStockPage * stockPageSize
+  );
+
   // Filtered Recipes Products
   const filteredProducts = initialData.catalogProducts.filter((p) => {
     return (
@@ -103,10 +114,21 @@ export function InventoryClient({ initialData }: { initialData: InventoryPageDat
   });
 
   // Filtered Movements
+  const [movementsPage, setMovementsPage] = useState(1);
+  const [movementsPageSize, setMovementsPageSize] = useState(20);
+
   const filteredMovements = initialData.movements.filter((m) => {
     if (movementTypeFilter === 'ALL') return true;
     return m.type === movementTypeFilter;
   });
+
+  const totalMovementsFiltered = filteredMovements.length;
+  const totalMovementsPages = Math.max(1, Math.ceil(totalMovementsFiltered / movementsPageSize));
+  const validMovementsPage = Math.min(movementsPage, totalMovementsPages);
+  const paginatedMovements = filteredMovements.slice(
+    (validMovementsPage - 1) * movementsPageSize,
+    validMovementsPage * movementsPageSize
+  );
 
   const handleReceiveOrder = async (orderId: string) => {
     setReceivingOrderId(orderId);
@@ -269,7 +291,10 @@ export function InventoryClient({ initialData }: { initialData: InventoryPageDat
               <input
                 type="text"
                 value={stockSearch}
-                onChange={(e) => setStockSearch(e.target.value)}
+                onChange={(e) => {
+                  setStockSearch(e.target.value);
+                  setStockPage(1);
+                }}
                 placeholder="بحث باسم المكون أو الكود..."
                 className="w-full text-xs pr-9 pl-3 py-2 border border-zinc-300 rounded-lg text-zinc-900 focus:outline-hidden focus:border-zinc-800"
               />
@@ -278,7 +303,10 @@ export function InventoryClient({ initialData }: { initialData: InventoryPageDat
             <div className="flex items-center gap-1.5 w-full sm:w-auto overflow-x-auto">
               <button
                 type="button"
-                onClick={() => setStockFilter('ALL')}
+                onClick={() => {
+                  setStockFilter('ALL');
+                  setStockPage(1);
+                }}
                 className={`px-3 py-1.5 text-xs font-medium rounded-lg border transition-colors ${
                   stockFilter === 'ALL'
                     ? 'bg-zinc-900 text-white border-zinc-900'
@@ -289,7 +317,10 @@ export function InventoryClient({ initialData }: { initialData: InventoryPageDat
               </button>
               <button
                 type="button"
-                onClick={() => setStockFilter('LOW')}
+                onClick={() => {
+                  setStockFilter('LOW');
+                  setStockPage(1);
+                }}
                 className={`px-3 py-1.5 text-xs font-medium rounded-lg border transition-colors ${
                   stockFilter === 'LOW'
                     ? 'bg-amber-700 text-white border-amber-700'
@@ -300,7 +331,10 @@ export function InventoryClient({ initialData }: { initialData: InventoryPageDat
               </button>
               <button
                 type="button"
-                onClick={() => setStockFilter('NEGATIVE')}
+                onClick={() => {
+                  setStockFilter('NEGATIVE');
+                  setStockPage(1);
+                }}
                 className={`px-3 py-1.5 text-xs font-medium rounded-lg border transition-colors ${
                   stockFilter === 'NEGATIVE'
                     ? 'bg-rose-700 text-white border-rose-700'
@@ -336,7 +370,7 @@ export function InventoryClient({ initialData }: { initialData: InventoryPageDat
                       </td>
                     </tr>
                   ) : (
-                    filteredStock.map((item) => (
+                    paginatedStock.map((item) => (
                       <tr key={item.id} className="hover:bg-zinc-50/60 transition-colors">
                         <td className="p-3 font-mono text-zinc-500">{item.sku || '—'}</td>
                         <td className="p-3 font-semibold text-zinc-900">
@@ -424,6 +458,56 @@ export function InventoryClient({ initialData }: { initialData: InventoryPageDat
                 </tbody>
               </table>
             </div>
+
+            {/* Stock Pagination Footer */}
+            {totalStockFiltered > 0 && (
+              <div className="flex flex-col sm:flex-row items-center justify-between gap-3 border-t border-zinc-100 bg-zinc-50/50 px-4 py-3 text-xs text-zinc-600">
+                <div className="flex items-center gap-2">
+                  <span>
+                    عرض {Math.min((validStockPage - 1) * stockPageSize + 1, totalStockFiltered)} إلى{' '}
+                    {Math.min(validStockPage * stockPageSize, totalStockFiltered)} من أصل {totalStockFiltered} مكوّن
+                  </span>
+                  <span className="text-zinc-300">|</span>
+                  <label className="flex items-center gap-1.5 text-zinc-500">
+                    <span>لكل صفحة:</span>
+                    <select
+                      value={stockPageSize}
+                      onChange={(e) => {
+                        setStockPageSize(Number(e.target.value));
+                        setStockPage(1);
+                      }}
+                      className="rounded-md border border-zinc-200 bg-white px-2 py-1 text-xs text-zinc-800"
+                    >
+                      <option value={10}>10</option>
+                      <option value={20}>20</option>
+                      <option value={50}>50</option>
+                    </select>
+                  </label>
+                </div>
+
+                <div className="flex items-center gap-1.5">
+                  <button
+                    type="button"
+                    onClick={() => setStockPage((p) => Math.max(1, p - 1))}
+                    disabled={validStockPage <= 1}
+                    className="rounded-md border border-zinc-200 bg-white px-2.5 py-1 font-medium hover:bg-zinc-100 disabled:opacity-40 transition"
+                  >
+                    السابق
+                  </button>
+                  <span className="px-2 font-medium">
+                    صفحة {validStockPage} من {totalStockPages}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => setStockPage((p) => Math.min(totalStockPages, p + 1))}
+                    disabled={validStockPage >= totalStockPages}
+                    className="rounded-md border border-zinc-200 bg-white px-2.5 py-1 font-medium hover:bg-zinc-100 disabled:opacity-40 transition"
+                  >
+                    التالي
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       )}
@@ -677,7 +761,10 @@ export function InventoryClient({ initialData }: { initialData: InventoryPageDat
               <label className="text-xs text-zinc-500">نوع الحركة:</label>
               <select
                 value={movementTypeFilter}
-                onChange={(e) => setMovementTypeFilter(e.target.value)}
+                onChange={(e) => {
+                  setMovementTypeFilter(e.target.value);
+                  setMovementsPage(1);
+                }}
                 className="text-xs border border-zinc-300 rounded-lg px-2.5 py-1.5 bg-white text-zinc-900 focus:outline-hidden focus:border-zinc-800"
               >
                 <option value="ALL">كافة أنواع الحركات</option>
@@ -713,7 +800,7 @@ export function InventoryClient({ initialData }: { initialData: InventoryPageDat
                       </td>
                     </tr>
                   ) : (
-                    filteredMovements.map((m) => (
+                    paginatedMovements.map((m) => (
                       <tr key={m.id} className="hover:bg-zinc-50/60 transition-colors">
                         <td className="p-3 font-mono text-zinc-500 whitespace-nowrap">
                           {new Date(m.createdAt).toLocaleString('ar-EG')}
@@ -751,6 +838,56 @@ export function InventoryClient({ initialData }: { initialData: InventoryPageDat
                 </tbody>
               </table>
             </div>
+
+            {/* Movements Pagination Footer */}
+            {totalMovementsFiltered > 0 && (
+              <div className="flex flex-col sm:flex-row items-center justify-between gap-3 border-t border-zinc-100 bg-zinc-50/50 px-4 py-3 text-xs text-zinc-600">
+                <div className="flex items-center gap-2">
+                  <span>
+                    عرض {Math.min((validMovementsPage - 1) * movementsPageSize + 1, totalMovementsFiltered)} إلى{' '}
+                    {Math.min(validMovementsPage * movementsPageSize, totalMovementsFiltered)} من أصل {totalMovementsFiltered} حركة
+                  </span>
+                  <span className="text-zinc-300">|</span>
+                  <label className="flex items-center gap-1.5 text-zinc-500">
+                    <span>لكل صفحة:</span>
+                    <select
+                      value={movementsPageSize}
+                      onChange={(e) => {
+                        setMovementsPageSize(Number(e.target.value));
+                        setMovementsPage(1);
+                      }}
+                      className="rounded-md border border-zinc-200 bg-white px-2 py-1 text-xs text-zinc-800"
+                    >
+                      <option value={10}>10</option>
+                      <option value={20}>20</option>
+                      <option value={50}>50</option>
+                    </select>
+                  </label>
+                </div>
+
+                <div className="flex items-center gap-1.5">
+                  <button
+                    type="button"
+                    onClick={() => setMovementsPage((p) => Math.max(1, p - 1))}
+                    disabled={validMovementsPage <= 1}
+                    className="rounded-md border border-zinc-200 bg-white px-2.5 py-1 font-medium hover:bg-zinc-100 disabled:opacity-40 transition"
+                  >
+                    السابق
+                  </button>
+                  <span className="px-2 font-medium">
+                    صفحة {validMovementsPage} من {totalMovementsPages}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => setMovementsPage((p) => Math.min(totalMovementsPages, p + 1))}
+                    disabled={validMovementsPage >= totalMovementsPages}
+                    className="rounded-md border border-zinc-200 bg-white px-2.5 py-1 font-medium hover:bg-zinc-100 disabled:opacity-40 transition"
+                  >
+                    التالي
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       )}
