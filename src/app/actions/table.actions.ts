@@ -15,7 +15,6 @@ import {
   PrintTableBillDto,
   CloseTableTabDto,
   SplitBillEqualDto,
-  splitBillEqualSchema,
 } from '../../application/tables/dto/table.dto';
 import { ListTablesUseCase } from '../../application/tables/use-cases/list-tables.use-case';
 import { ManageSectionsUseCase } from '../../application/tables/use-cases/manage-sections.use-case';
@@ -25,10 +24,7 @@ import { AddItemsToTabUseCase } from '../../application/tables/use-cases/add-ite
 import { TransferTableUseCase } from '../../application/tables/use-cases/transfer-table.use-case';
 import { PrintTableBillUseCase } from '../../application/tables/use-cases/print-table-bill.use-case';
 import { CloseTableTabUseCase } from '../../application/tables/use-cases/close-table-tab.use-case';
-import { SplitBillService } from '../../domain/tables/services/split-bill.service';
-import { Money } from '../../domain/shared/value-objects/money';
-import { prisma } from '../../infrastructure/db/prisma';
-import { NotFoundError } from '../../domain/shared/errors/domain-error';
+import { SplitTableBillUseCase } from '../../application/tables/use-cases/split-table-bill.use-case';
 
 // 1. List Tables
 export async function listTablesAction(branchId: string): Promise<ActionResult<Awaited<ReturnType<ListTablesUseCase['execute']>>>> {
@@ -164,25 +160,10 @@ export async function printTableBillAction(dto: PrintTableBillDto): Promise<Acti
 export async function splitBillEqualAction(dto: SplitBillEqualDto): Promise<ActionResult<{ totalMinor: number; splits: Array<{ partIndex: number; amountMinor: number }> }>> {
   try {
     await SessionService.requirePermission(PermissionCode.POS_ACCESS);
-    const validated = splitBillEqualSchema.parse(dto);
-
-    const order = await prisma.order.findUnique({ where: { id: validated.orderId } });
-    if (!order) {
-      throw new NotFoundError('الطلب', validated.orderId);
-    }
-
-    const total = Money.fromMinor(order.totalMinor, order.currency ?? 'EGP');
-    const splits = SplitBillService.splitEqually(total, validated.splitCount);
-
+    const result = await new SplitTableBillUseCase().execute(dto);
     return {
       success: true,
-      data: {
-        totalMinor: order.totalMinor,
-        splits: splits.map((part, index) => ({
-          partIndex: index + 1,
-          amountMinor: part.amount,
-        })),
-      },
+      data: result,
     };
   } catch (error) {
     return toActionFailure(error);

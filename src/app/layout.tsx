@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from 'next';
 import { Cairo } from 'next/font/google';
 import './globals.css';
 import { PwaRegister } from './pwa-register';
+import { prisma } from '../infrastructure/db/prisma';
 
 const cairo = Cairo({
   subsets: ['arabic', 'latin'],
@@ -18,20 +19,36 @@ export const viewport: Viewport = {
   userScalable: false,
 };
 
-export const metadata: Metadata = {
-  title: 'قهوة كايرو | كافيه ومقهى ٢٤ ساعة',
-  description: 'قهوة كايرو - كافيه ومقهى ٢٤ ساعة في ستريب مول بالعاشر من رمضان. قهوة مختصة، مشروبات ساخنة وباردة، وحلويات.',
-  manifest: '/manifest.webmanifest',
-  icons: {
-    icon: '/logo.png',
-    apple: '/logo.png',
-  },
-  appleWebApp: {
-    capable: true,
-    statusBarStyle: 'black-translucent',
-    title: 'Qahwet Cairo',
-  },
-};
+export async function generateMetadata(): Promise<Metadata> {
+  let setting = null;
+  try {
+    setting = await prisma.restaurantSetting.findFirst();
+  } catch {
+    // safe fallback when database is initializing or during static build
+  }
+
+  const title = setting?.nameAr ? `${setting.nameAr} | المطعم والضيافة` : 'منظومة المطعم المتكاملة';
+  const description = setting?.nameAr
+    ? `منظومة ${setting.nameAr} لإدارة المطاعم والضيافة، نقاط البيع، المطبخ، والتوصيل.`
+    : 'نظام إدارة المطاعم والضيافة، نقاط البيع، المطبخ، والتوصيل.';
+  const appleTitle = setting?.nameEn || setting?.nameAr || 'Resto';
+
+  return {
+    title,
+    description,
+    manifest: '/manifest.webmanifest',
+    icons: {
+      icon: '/logo.png',
+      apple: '/logo.png',
+    },
+    appleWebApp: {
+      capable: true,
+      statusBarStyle: 'black-translucent',
+      title: appleTitle,
+    },
+  };
+}
+
 
 export default function RootLayout({
   children,

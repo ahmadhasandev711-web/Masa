@@ -51,8 +51,11 @@ export class PlaceOnlineOrderUseCase {
     }
 
     const currency = setting.currency;
-    const deliveryFee = Money.fromMinor(setting.deliveryFee, currency);
+    const isTakeaway = validated.type === 'TAKEAWAY';
+    const orderType = isTakeaway ? OrderType.TAKEAWAY : OrderType.DELIVERY;
+    const effectiveDeliveryFee = isTakeaway ? Money.zero(currency) : Money.fromMinor(setting.deliveryFee, currency);
     const taxRatePercent = Number(setting.taxRatePercent);
+
 
     // 1. Fetch & Verify all items directly from database (GR-3.2: server-verified prices)
     const pricingItems: PricingItemInput[] = [];
@@ -131,17 +134,19 @@ export class PlaceOnlineOrderUseCase {
     }
 
     // 2. Compute Exact Pricing
-    const pricing = OrderPricingService.calculate(pricingItems, deliveryFee, taxRatePercent);
+    const pricing = OrderPricingService.calculate(pricingItems, effectiveDeliveryFee, taxRatePercent);
 
     // 3. Address Formatting
-    const fullAddressSummary = [
-      validated.area,
-      validated.street,
-      validated.building ? `عمارة ${validated.building}` : null,
-      validated.floor ? `طابق ${validated.floor}` : null,
-      validated.apartment ? `شقة ${validated.apartment}` : null,
-      validated.landmark ? `(علامة: ${validated.landmark})` : null,
-    ].filter(Boolean).join('، ');
+    const fullAddressSummary = isTakeaway
+      ? 'استلام من الفرع'
+      : [
+          validated.area,
+          validated.street,
+          validated.building ? `عمارة ${validated.building}` : null,
+          validated.floor ? `طابق ${validated.floor}` : null,
+          validated.apartment ? `شقة ${validated.apartment}` : null,
+          validated.landmark ? `(علامة: ${validated.landmark})` : null,
+        ].filter(Boolean).join('، ');
 
 
     // 5. Atomic All-or-Nothing Transaction (GR-4.1, ACID)
@@ -153,7 +158,7 @@ export class PlaceOnlineOrderUseCase {
             phone: validated.customerPhone,
             fullName: validated.customerName,
             email: validated.customerEmail || undefined,
-            address: {
+            address: isTakeaway || !validated.area || !validated.street ? undefined : {
               title: 'عنوان التوصيل',
               city: 'Cairo',
               area: validated.area,
@@ -190,7 +195,7 @@ export class PlaceOnlineOrderUseCase {
             customerId: customerResult.customer.id,
             branchId,
             source: OrderSource.ONLINE,
-            type: OrderType.DELIVERY,
+            type: orderType,
             status: OrderStatus.PENDING,
             paymentStatus: PaymentStatus.PENDING,
             paymentMethod: PaymentMethod.CASH,
@@ -200,6 +205,7 @@ export class PlaceOnlineOrderUseCase {
             taxMinor: pricing.tax.amount,
             discountMinor: pricing.discount.amount,
             totalMinor: pricing.total.amount,
+
             customerName: validated.customerName.trim(),
             customerPhone: customerResult.customer.phone,
             deliveryAddress: fullAddressSummary,

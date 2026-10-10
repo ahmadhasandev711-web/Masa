@@ -1,10 +1,24 @@
 import type { MetadataRoute } from 'next';
+import { prisma } from '../infrastructure/db/prisma';
 
-export default function manifest(): MetadataRoute.Manifest {
+export default async function manifest(): Promise<MetadataRoute.Manifest> {
+  let setting = null;
+  try {
+    setting = await prisma.restaurantSetting.findFirst();
+  } catch {
+    // safe fallback when database is initializing or during static build
+  }
+
+  const name = setting?.nameAr ? `${setting.nameAr} | نظام إدارة المطعم` : 'منظومة المطعم الذكية';
+  const shortName = setting?.nameAr || 'المطعم';
+  const description = setting?.nameAr
+    ? `منظومة ${setting.nameAr} المتكاملة لإدارة المطاعم ونقاط البيع والصالة والتوصيل والمخزون.`
+    : 'منظومة متكاملة لإدارة المطاعم ونقاط البيع والصالة والتوصيل والمخزون.';
+
   return {
-    name: 'قهوة كايرو | كافيه ومقهى ٢٤ ساعة',
-    short_name: 'قهوة كايرو',
-    description: 'قهوة كايرو - كافيه ومقهى ٢٤ ساعة في ستريب مول بالعاشر من رمضان',
+    name,
+    short_name: shortName,
+    description,
     start_url: '/admin',
     scope: '/',
     display: 'standalone',
@@ -32,3 +46,4 @@ export default function manifest(): MetadataRoute.Manifest {
     ],
   };
 }
+

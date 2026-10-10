@@ -4,10 +4,9 @@ import { revalidatePath } from 'next/cache';
 import fs from 'fs';
 import path from 'path';
 import { PermissionCode } from '../../domain/staff/enums/permission.enum';
-import { ForbiddenError, NotFoundError, ValidationError } from '../../domain/shared/errors/domain-error';
+import { ForbiddenError, ValidationError } from '../../domain/shared/errors/domain-error';
 import { SessionService } from '../../infrastructure/auth/session.service';
 import { detectImageType } from '../../infrastructure/uploads/image-signature';
-import { prisma } from '../../infrastructure/db/prisma';
 import { CategoryInput, ProductInput, ModifierGroupInput, BranchAvailabilityInput } from '../../application/catalog/dto/catalog.dto';
 import { SaveCategoryUseCase } from '../../application/catalog/use-cases/save-category.use-case';
 import { SaveProductUseCase } from '../../application/catalog/use-cases/save-product.use-case';
@@ -17,6 +16,7 @@ import { DeleteCategoryUseCase } from '../../application/catalog/use-cases/delet
 import { DeleteModifierGroupUseCase } from '../../application/catalog/use-cases/delete-modifier-group.use-case';
 import { SetBranchAvailabilityUseCase } from '../../application/catalog/use-cases/set-branch-availability.use-case';
 import { SetCatalogStatusUseCase } from '../../application/catalog/use-cases/set-catalog-status.use-case';
+import { ToggleProductFeaturedUseCase } from '../../application/catalog/use-cases/toggle-product-featured.use-case';
 import { CatalogResource } from '../../domain/catalog/enums/catalog-resource.enum';
 import { ActionResult, toActionFailure } from './action-result';
 
@@ -72,17 +72,10 @@ export async function setCatalogStatusAction(input: { resource: CatalogResource;
 export async function toggleProductFeaturedAction(productId: string): Promise<ActionResult<{ isFeatured: boolean }>> {
   try {
     await SessionService.requirePermission(PermissionCode.MANAGE_MENU);
-    const product = await prisma.product.findUnique({ where: { id: productId } });
-    if (!product) {
-      throw new NotFoundError('الصنف غير موجود');
-    }
-    const updated = await prisma.product.update({
-      where: { id: productId },
-      data: { isFeatured: !product.isFeatured },
-    });
+    const result = await new ToggleProductFeaturedUseCase().execute({ productId });
     revalidatePath('/admin/menu');
     revalidatePath('/');
-    return { success: true, data: { isFeatured: updated.isFeatured } };
+    return { success: true, data: { isFeatured: result.isFeatured } };
   } catch (error) {
     return toActionFailure(error);
   }

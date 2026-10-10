@@ -4,8 +4,6 @@ import { revalidatePath } from 'next/cache';
 import { PermissionCode } from '../../domain/staff/enums/permission.enum';
 import { SessionService } from '../../infrastructure/auth/session.service';
 import { BranchContextService } from '../../infrastructure/auth/branch-context.service';
-import { prisma } from '../../infrastructure/db/prisma';
-import { NotFoundError } from '../../domain/shared/errors/domain-error';
 import {
   SaveInventoryItemInput,
   StockAdjustmentInputDto,
@@ -83,15 +81,12 @@ export async function createPurchaseOrderAction(input: CreatePurchaseOrderInput)
 export async function receivePurchaseOrderAction(orderId: string): Promise<ActionResult<{ id: string }>> {
   try {
     const session = await SessionService.requirePermission(PermissionCode.MANAGE_INVENTORY);
-    const order = await prisma.purchaseOrder.findUnique({
-      where: { id: orderId },
-      select: { branchId: true },
-    });
-    if (!order) {
-      throw new NotFoundError('أمر الشراء', orderId);
-    }
-    await BranchContextService.assertBranchAccess(session, order.branchId);
-    const result = await new ReceivePurchaseOrderUseCase().execute(orderId, session.userId);
+    const canManageAll = session.isSuperAdmin || session.permissions.includes(PermissionCode.MANAGE_BRANCHES);
+    const result = await new ReceivePurchaseOrderUseCase().execute(
+      orderId,
+      session.userId,
+      canManageAll ? undefined : session.assignedBranchIds
+    );
     revalidatePath('/admin/inventory');
     return { success: true, data: { id: result.id } };
   } catch (error) {

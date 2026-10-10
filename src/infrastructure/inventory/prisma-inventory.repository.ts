@@ -529,10 +529,33 @@ export class PrismaInventoryRepository {
           },
         });
 
+        // Rule 5.4: Moving Weighted Average Cost (WAC)
+        // newAverageCost = (existingValuation + incomingValuation) / (existingQty + incomingQty)
+        const currentItem = await tx.inventoryItem.findUnique({
+          where: { id: item.inventoryItemId },
+          select: { defaultCostMinor: true },
+        });
+
+        const currentCost = currentItem?.defaultCostMinor ?? item.inventoryItem.defaultCostMinor ?? 0;
+
+        const totalStockAgg = await tx.branchInventory.aggregate({
+          where: { inventoryItemId: item.inventoryItemId },
+          _sum: { quantity: true },
+        });
+        const totalQtyAfter = Number(totalStockAgg._sum.quantity ?? 0);
+        const totalQtyBefore = Number((totalQtyAfter - itemQty).toFixed(3));
+
+        let newAverageCost = item.unitCostMinor;
+        if (totalQtyBefore > 0 && currentCost > 0) {
+          const currentValuation = totalQtyBefore * currentCost;
+          const incomingValuation = itemQty * item.unitCostMinor;
+          newAverageCost = Math.round((currentValuation + incomingValuation) / (totalQtyBefore + itemQty));
+        }
+
         await tx.inventoryItem.update({
           where: { id: item.inventoryItemId },
           data: {
-            defaultCostMinor: item.unitCostMinor,
+            defaultCostMinor: newAverageCost,
           },
         });
       }

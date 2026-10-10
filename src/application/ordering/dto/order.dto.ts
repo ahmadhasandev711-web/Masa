@@ -9,11 +9,12 @@ export const placeOnlineOrderItemSchema = z.object({
 
 export const placeOnlineOrderSchema = z.object({
   branchId: z.string().uuid().nullable().optional(),
+  type: z.enum(['DELIVERY', 'TAKEAWAY']).default('DELIVERY'),
   customerName: z.string().min(2, 'اسم العميل يجب ألا يقل عن حرفين'),
   customerPhone: z.string().min(5, 'رقم الهاتف مطلوب'),
   customerEmail: z.string().email().nullable().optional().or(z.literal('')),
-  area: z.string().min(1, 'المنطقة أو الحي مطلوب'),
-  street: z.string().min(1, 'اسم الشارع مطلوب'),
+  area: z.string().optional().nullable().or(z.literal('')),
+  street: z.string().optional().nullable().or(z.literal('')),
   building: z.string().nullable().optional(),
   floor: z.string().nullable().optional(),
   apartment: z.string().nullable().optional(),
@@ -22,10 +23,36 @@ export const placeOnlineOrderSchema = z.object({
   customerNotes: z.string().nullable().optional(),
   idempotencyKey: z.string().uuid().optional(),
   items: z.array(placeOnlineOrderItemSchema).min(1, 'يجب اختيار صنف واحد على الأقل في السلة'),
+}).superRefine((data, ctx) => {
+  if (data.type === 'DELIVERY') {
+    if (!data.area || data.area.trim().length === 0) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'المنطقة أو الحي مطلوب لطلبات التوصيل',
+        path: ['area'],
+      });
+    }
+    if (!data.street || data.street.trim().length === 0) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'اسم الشارع مطلوب لطلبات التوصيل',
+        path: ['street'],
+      });
+    }
+  } else if (data.type === 'TAKEAWAY') {
+    if (!data.branchId) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'يرجى اختيار فرع الاستلام',
+        path: ['branchId'],
+      });
+    }
+  }
 });
 
 export type PlaceOnlineOrderItemDto = z.infer<typeof placeOnlineOrderItemSchema>;
 export type PlaceOnlineOrderDto = z.infer<typeof placeOnlineOrderSchema>;
+
 
 export const listOrdersQuerySchema = z.object({
   status: z.string().optional(),

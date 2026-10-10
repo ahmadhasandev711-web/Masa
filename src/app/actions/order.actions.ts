@@ -3,7 +3,6 @@
 import { revalidatePath } from 'next/cache';
 import { PermissionCode } from '../../domain/staff/enums/permission.enum';
 import { SessionService } from '../../infrastructure/auth/session.service';
-import { prisma } from '../../infrastructure/db/prisma';
 import {
   PlaceOnlineOrderDto,
   ListOrdersQueryInput,
@@ -18,7 +17,7 @@ import { AssignOrderBranchUseCase } from '../../application/ordering/use-cases/a
 import { UpdateOrderStatusUseCase } from '../../application/ordering/use-cases/update-order-status.use-case';
 import { GetOrdersMetricsUseCase } from '../../application/ordering/use-cases/get-orders-metrics.use-case';
 import { ActionResult, toActionFailure } from './action-result';
-import { ForbiddenError, NotFoundError, ValidationError } from '../../domain/shared/errors/domain-error';
+import { ForbiddenError, ValidationError } from '../../domain/shared/errors/domain-error';
 import { RateLimiter } from '../../infrastructure/security/rate-limiter';
 import { RateLimiterKeys, RateLimitPolicies } from '../../infrastructure/security/rate-limiter-keys';
 import { getClientIp } from '../../infrastructure/security/client-ip';
@@ -124,22 +123,10 @@ export async function updateOrderStatusAction(input: UpdateOrderStatusDto): Prom
     const session = await SessionService.requirePermission(PermissionCode.MANAGE_ORDERS);
     const canManageAll = session.isSuperAdmin || session.permissions.includes(PermissionCode.MANAGE_BRANCHES);
 
-    if (!canManageAll) {
-      const existingOrder = await prisma.order.findUnique({
-        where: { id: input.orderId },
-        select: { branchId: true },
-      });
-      if (!existingOrder) {
-        throw new NotFoundError('الطلب', input.orderId);
-      }
-      if (existingOrder.branchId && !session.assignedBranchIds.includes(existingOrder.branchId)) {
-        throw new ForbiddenError('غير مصرح لك بتعديل حالة طلب تابع لفرع آخر');
-      }
-    }
-
     const updated = await new UpdateOrderStatusUseCase().execute({
       ...input,
       userId: session.userId,
+      allowedBranchIds: canManageAll ? undefined : session.assignedBranchIds,
     });
     revalidatePath('/admin/orders');
     return { success: true, data: { orderId: updated.id, status: updated.status } };

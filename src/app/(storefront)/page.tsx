@@ -25,8 +25,8 @@ export default async function StorefrontHomePage() {
 
   return (
     <HomeClient
-      restaurantNameAr={setting?.nameAr ?? 'قهوة كايرو'}
-      restaurantNameEn={setting?.nameEn ?? 'Qahwet Cairo'}
+      restaurantNameAr={setting?.nameAr ?? 'المطعم'}
+      restaurantNameEn={setting?.nameEn ?? 'Restaurant'}
       currencySymbol={setting?.currencySymbol ?? 'ج.م'}
       featuredProducts={products}
       heroProducts={heroProducts}

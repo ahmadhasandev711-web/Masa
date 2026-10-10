@@ -26,9 +26,9 @@ export function MenuQrModal({
   const [copied, setCopied] = useState(false);
 
   // Compute live full URL on client
-  const origin = typeof window !== 'undefined' ? window.location.origin : 'https://qahwetcairo.com';
+  const origin = typeof window !== 'undefined' ? window.location.origin : '';
   const menuUrl = useMemo(() => {
-    return `${origin}/menu`;
+    return origin ? `${origin}/menu` : '/menu';
   }, [origin]);
 
   const activeBranch = branches.find((b) => b.id === selectedBranchId) || branches[0];
@@ -54,10 +54,12 @@ export function MenuQrModal({
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = `QahwetCairo_Menu_QR_${activeBranch?.nameAr || 'General'}.svg`;
+    const safeBrand = (restaurantNameEn || restaurantNameAr || 'Menu').replace(/[^a-zA-Z0-9_\u0600-\u06FF]/g, '_');
+    link.download = `${safeBrand}_Menu_QR_${activeBranch?.nameAr || 'General'}.svg`;
     link.click();
     URL.revokeObjectURL(url);
   };
+
 
   return (
     <div

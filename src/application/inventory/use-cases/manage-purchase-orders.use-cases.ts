@@ -2,7 +2,7 @@ import { PrismaInventoryRepository } from '../../../infrastructure/inventory/pri
 import { CreatePurchaseOrderInput, CreatePurchaseOrderSchema } from '../dto/inventory.dto';
 import { PurchaseOrderDto } from '../../../domain/inventory/contracts/inventory.repository';
 import { Money } from '../../../domain/shared/value-objects/money';
-import { ValidationError } from '../../../domain/shared/errors/domain-error';
+import { ForbiddenError, NotFoundError, ValidationError } from '../../../domain/shared/errors/domain-error';
 
 import { prisma } from '../../../infrastructure/db/prisma';
 
@@ -47,8 +47,22 @@ export class CreatePurchaseOrderUseCase {
 export class ReceivePurchaseOrderUseCase {
   constructor(private readonly repo = new PrismaInventoryRepository()) {}
 
-  public async execute(orderId: string, userId?: string): Promise<PurchaseOrderDto> {
+  public async execute(orderId: string, userId?: string, allowedBranchIds?: string[]): Promise<PurchaseOrderDto> {
     if (!orderId) throw new ValidationError('معرف أمر الشراء مطلوب');
+
+    if (allowedBranchIds) {
+      const order = await prisma.purchaseOrder.findUnique({
+        where: { id: orderId },
+        select: { branchId: true },
+      });
+      if (!order) {
+        throw new NotFoundError('أمر الشراء', orderId);
+      }
+      if (!allowedBranchIds.includes(order.branchId)) {
+        throw new ForbiddenError('غير مصرح لك باستلام أمر شراء تابع لفرع آخر');
+      }
+    }
+
     return this.repo.receivePurchaseOrder(orderId, userId);
   }
 }

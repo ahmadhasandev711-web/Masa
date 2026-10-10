@@ -16,6 +16,8 @@ export default async function StorefrontCheckoutPage() {
       deliveryFeeMinor={setting?.deliveryFee ?? 0}
       taxRatePercent={Number(setting?.taxRatePercent ?? 0)}
       currencySymbol={setting?.currencySymbol ?? 'ج.م'}
+      restaurantNameAr={setting?.nameAr || undefined}
+      restaurantNameEn={setting?.nameEn || undefined}
       branches={branches}
     />
   );

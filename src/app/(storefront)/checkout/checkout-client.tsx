@@ -10,6 +10,8 @@ import {
   AlertCircle,
   Truck,
   CheckCircle2,
+  ShoppingBag,
+  Store,
 } from 'lucide-react';
 import { useCart } from '../cart-context';
 import { placeOnlineOrderAction } from '../../actions/order.actions';
@@ -24,6 +26,8 @@ interface CheckoutClientProps {
   deliveryFeeMinor: number;
   taxRatePercent: number;
   currencySymbol: string;
+  restaurantNameAr?: string;
+  restaurantNameEn?: string;
   branches?: BranchOption[];
 }
 
@@ -31,12 +35,15 @@ export function CheckoutClient({
   deliveryFeeMinor,
   taxRatePercent,
   currencySymbol,
+  restaurantNameAr,
+  restaurantNameEn,
   branches = [],
 }: CheckoutClientProps) {
   const router = useRouter();
   const { items, subtotalMinor, clearCart, locale } = useCart();
   const isAr = locale === 'ar';
 
+  const [orderType, setOrderType] = useState<'DELIVERY' | 'TAKEAWAY'>('DELIVERY');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -60,8 +67,9 @@ export function CheckoutClient({
     return '10000000-1000-4000-8000-100000000000';
   });
 
+  const effectiveDeliveryFeeMinor = orderType === 'TAKEAWAY' ? 0 : deliveryFeeMinor;
   const taxMinor = Math.round(subtotalMinor * (taxRatePercent / 100));
-  const finalTotalMinor = subtotalMinor > 0 ? subtotalMinor + deliveryFeeMinor + taxMinor : 0;
+  const finalTotalMinor = subtotalMinor > 0 ? subtotalMinor + effectiveDeliveryFeeMinor + taxMinor : 0;
 
   const formatPrice = (minor: number) => (minor / 100).toFixed(2);
 
@@ -72,22 +80,28 @@ export function CheckoutClient({
       return;
     }
 
+    if (orderType === 'TAKEAWAY' && !selectedBranchId && branches.length > 0) {
+      setError(isAr ? 'يرجى اختيار فرع الاستلام' : 'Please select a pickup branch');
+      return;
+    }
+
     setIsSubmitting(true);
     setError(null);
 
     try {
       const orderPayload = {
+        type: orderType,
         branchId: selectedBranchId || undefined,
         customerName,
         customerPhone,
         customerEmail: customerEmail || undefined,
-        area,
-        street,
-        building: building || undefined,
-        floor: floor || undefined,
-        apartment: apartment || undefined,
-        landmark: landmark || undefined,
-        deliveryNotes: deliveryNotes || undefined,
+        area: orderType === 'DELIVERY' ? area : undefined,
+        street: orderType === 'DELIVERY' ? street : undefined,
+        building: orderType === 'DELIVERY' ? (building || undefined) : undefined,
+        floor: orderType === 'DELIVERY' ? (floor || undefined) : undefined,
+        apartment: orderType === 'DELIVERY' ? (apartment || undefined) : undefined,
+        landmark: orderType === 'DELIVERY' ? (landmark || undefined) : undefined,
+        deliveryNotes: orderType === 'DELIVERY' ? (deliveryNotes || undefined) : undefined,
         customerNotes: customerNotes || undefined,
         idempotencyKey,
         items: items.map((item) => ({
@@ -135,15 +149,49 @@ export function CheckoutClient({
   return (
     <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6 lg:py-12 space-y-8">
       {/* Title */}
-      <div className="border-b border-white/10 pb-4">
-        <h1 className="text-2xl font-extrabold text-white sm:text-3xl">
-          {isAr ? 'إتمام طلب التوصيل (للضيوف)' : 'Guest Delivery Checkout'}
-        </h1>
-        <p className="text-xs text-zinc-400 mt-1">
-          {isAr
-            ? 'دون الحاجة لتسجيل حساب مسبق — أدخل بيانات التوصيل وسنتولى الباقي'
-            : 'No prior registration required — enter your delivery info and we handle the rest'}
-        </p>
+      {/* Title & Order Type Toggle */}
+      <div className="border-b border-white/10 pb-4 space-y-4">
+        <div>
+          <h1 className="text-2xl font-extrabold text-white sm:text-3xl">
+            {orderType === 'TAKEAWAY'
+              ? (isAr ? 'إتمام طلب الاستلام من الفرع (تيك أواي)' : 'Store Pickup Checkout')
+              : (isAr ? 'إتمام طلب التوصيل (للضيوف)' : 'Guest Delivery Checkout')}
+          </h1>
+          <p className="text-xs text-zinc-400 mt-1">
+            {orderType === 'TAKEAWAY'
+              ? (isAr ? 'استلم وجبتك ساخنة مباشرة من الفرع دون رسوم توصيل' : 'Pick up your fresh order directly from the branch with no delivery fees')
+              : (isAr ? 'دون الحاجة لتسجيل حساب مسبق — أدخل بيانات التوصيل وسنتولى الباقي' : 'No prior registration required — enter your delivery info and we handle the rest')}
+          </p>
+        </div>
+
+        {/* Order Type Selector */}
+        <div className="grid grid-cols-2 gap-3 max-w-md pt-1">
+          <button
+            type="button"
+            onClick={() => setOrderType('DELIVERY')}
+            className={`flex items-center justify-center gap-2 rounded-xl border p-3 text-xs font-bold transition-all ${
+              orderType === 'DELIVERY'
+                ? 'border-rose-500 bg-rose-500/10 text-rose-300 shadow-md ring-1 ring-rose-500/30'
+                : 'border-white/10 bg-zinc-900/60 text-zinc-400 hover:border-white/20 hover:text-white'
+            }`}
+          >
+            <Truck className="h-4 w-4" />
+            <span>{isAr ? 'توصيل للمنزل' : 'Home Delivery'}</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setOrderType('TAKEAWAY')}
+            className={`flex items-center justify-center gap-2 rounded-xl border p-3 text-xs font-bold transition-all ${
+              orderType === 'TAKEAWAY'
+                ? 'border-amber-500 bg-amber-500/10 text-amber-300 shadow-md ring-1 ring-amber-500/30'
+                : 'border-white/10 bg-zinc-900/60 text-zinc-400 hover:border-white/20 hover:text-white'
+            }`}
+          >
+            <ShoppingBag className="h-4 w-4" />
+            <span>{isAr ? 'استلام من الفرع' : 'Store Pickup'}</span>
+          </button>
+        </div>
       </div>
 
       {error && (
@@ -180,7 +228,7 @@ export function CheckoutClient({
 
               <div>
                 <label className="block text-2xs font-semibold text-zinc-300">
-                  {isAr ? 'رقم الهاتف للتوصيل *' : 'Phone Number *'}
+                  {isAr ? 'رقم الهاتف للتواصل *' : 'Phone Number *'}
                 </label>
                 <input
                   type="tel"
@@ -208,128 +256,168 @@ export function CheckoutClient({
               />
             </div>
 
-            {branches.length > 1 && (
+            {orderType === 'TAKEAWAY' ? (
               <div>
                 <label className="block text-2xs font-semibold text-zinc-300">
-                  {isAr ? 'فرع تجهيز الطلب والتوصيل *' : 'Fulfillment Branch *'}
+                  {isAr ? 'فرع استلام الطلب *' : 'Pickup Branch *'}
                 </label>
-                <select
-                  value={selectedBranchId}
-                  onChange={(e) => setSelectedBranchId(e.target.value)}
-                  className="mt-1.5 w-full rounded-xl border border-white/10 bg-zinc-950/80 px-3.5 py-2.5 text-xs text-white focus:border-rose-500 focus:outline-hidden"
-                >
-                  {branches.map((b) => (
-                    <option key={b.id} value={b.id} className="bg-zinc-900 text-white">
-                      {isAr ? b.nameAr : b.nameEn}
-                    </option>
-                  ))}
-                </select>
+                {branches.length > 1 ? (
+                  <select
+                    value={selectedBranchId}
+                    onChange={(e) => setSelectedBranchId(e.target.value)}
+                    className="mt-1.5 w-full rounded-xl border border-white/10 bg-zinc-950/80 px-3.5 py-2.5 text-xs text-white focus:border-amber-500 focus:outline-hidden"
+                  >
+                    {branches.map((b) => (
+                      <option key={b.id} value={b.id} className="bg-zinc-900 text-white">
+                        {isAr ? b.nameAr : b.nameEn}
+                      </option>
+                    ))}
+                  </select>
+                ) : (
+                  <div className="mt-1.5 flex items-center gap-2 rounded-xl border border-white/10 bg-zinc-950/80 px-3.5 py-2.5 text-xs text-zinc-200">
+                    <Store className="h-4 w-4 text-amber-500 shrink-0" />
+                    <span>{branches[0] ? (isAr ? branches[0].nameAr : branches[0].nameEn) : (isAr ? 'الفرع الرئيسي' : 'Main Branch')}</span>
+                  </div>
+                )}
               </div>
+            ) : (
+              branches.length > 1 && (
+                <div>
+                  <label className="block text-2xs font-semibold text-zinc-300">
+                    {isAr ? 'فرع تجهيز الطلب والتوصيل *' : 'Fulfillment Branch *'}
+                  </label>
+                  <select
+                    value={selectedBranchId}
+                    onChange={(e) => setSelectedBranchId(e.target.value)}
+                    className="mt-1.5 w-full rounded-xl border border-white/10 bg-zinc-950/80 px-3.5 py-2.5 text-xs text-white focus:border-rose-500 focus:outline-hidden"
+                  >
+                    {branches.map((b) => (
+                      <option key={b.id} value={b.id} className="bg-zinc-900 text-white">
+                        {isAr ? b.nameAr : b.nameEn}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )
             )}
           </div>
 
-          {/* 2. Delivery Address */}
-          <div className="rounded-2xl border border-white/10 bg-zinc-900/60 p-6 space-y-4 shadow-sm">
-            <div className="flex items-center gap-2 border-b border-white/10 pb-3 text-sm font-bold text-white">
-              <MapPin className="h-4 w-4 text-amber-500" />
-              <span>{isAr ? '2. تفاصيل عنوان التوصيل' : '2. Delivery Address Details'}</span>
-            </div>
+          {/* 2. Delivery Address or Pickup Notice */}
+          {orderType === 'DELIVERY' ? (
+            <div className="rounded-2xl border border-white/10 bg-zinc-900/60 p-6 space-y-4 shadow-sm">
+              <div className="flex items-center gap-2 border-b border-white/10 pb-3 text-sm font-bold text-white">
+                <MapPin className="h-4 w-4 text-amber-500" />
+                <span>{isAr ? '2. تفاصيل عنوان التوصيل' : '2. Delivery Address Details'}</span>
+              </div>
 
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                <div>
+                  <label className="block text-2xs font-semibold text-zinc-300">
+                    {isAr ? 'المنطقة أو الحي *' : 'Area / District *'}
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={area}
+                    onChange={(e) => setArea(e.target.value)}
+                    placeholder={isAr ? 'مثال: المعادي، التجمع، مدينة نصر' : 'e.g. Maadi, Downtown'}
+                    className="mt-1.5 w-full rounded-xl border border-white/10 bg-zinc-950/80 px-3.5 py-2.5 text-xs text-white placeholder:text-zinc-600 focus:border-amber-500 focus:outline-hidden"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-2xs font-semibold text-zinc-300">
+                    {isAr ? 'اسم الشارع *' : 'Street Name *'}
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={street}
+                    onChange={(e) => setStreet(e.target.value)}
+                    placeholder={isAr ? 'مثال: شارع 9، شارع النصر' : 'e.g. Main St.'}
+                    className="mt-1.5 w-full rounded-xl border border-white/10 bg-zinc-950/80 px-3.5 py-2.5 text-xs text-white placeholder:text-zinc-600 focus:border-amber-500 focus:outline-hidden"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-3 gap-3">
+                <div>
+                  <label className="block text-2xs font-semibold text-zinc-300">
+                    {isAr ? 'رقم العمارة' : 'Building'}
+                  </label>
+                  <input
+                    type="text"
+                    value={building}
+                    onChange={(e) => setBuilding(e.target.value)}
+                    placeholder="14"
+                    className="mt-1.5 w-full rounded-xl border border-white/10 bg-zinc-950/80 px-3 py-2.5 text-xs text-white placeholder:text-zinc-600 focus:border-amber-500 focus:outline-hidden"
+                  />
+                </div>
+                <div>
+                  <label className="block text-2xs font-semibold text-zinc-300">
+                    {isAr ? 'الطابق' : 'Floor'}
+                  </label>
+                  <input
+                    type="text"
+                    value={floor}
+                    onChange={(e) => setFloor(e.target.value)}
+                    placeholder="3"
+                    className="mt-1.5 w-full rounded-xl border border-white/10 bg-zinc-950/80 px-3 py-2.5 text-xs text-white placeholder:text-zinc-600 focus:border-amber-500 focus:outline-hidden"
+                  />
+                </div>
+                <div>
+                  <label className="block text-2xs font-semibold text-zinc-300">
+                    {isAr ? 'الشقة' : 'Apartment'}
+                  </label>
+                  <input
+                    type="text"
+                    value={apartment}
+                    onChange={(e) => setApartment(e.target.value)}
+                    placeholder="12"
+                    className="mt-1.5 w-full rounded-xl border border-white/10 bg-zinc-950/80 px-3 py-2.5 text-xs text-white placeholder:text-zinc-600 focus:border-amber-500 focus:outline-hidden"
+                  />
+                </div>
+              </div>
+
               <div>
                 <label className="block text-2xs font-semibold text-zinc-300">
-                  {isAr ? 'المنطقة أو الحي *' : 'Area / District *'}
+                  {isAr ? 'علامة مميزة' : 'Landmark'}
                 </label>
                 <input
                   type="text"
-                  required
-                  value={area}
-                  onChange={(e) => setArea(e.target.value)}
-                  placeholder={isAr ? 'مثال: المعادي، التجمع، مدينة نصر' : 'e.g. Maadi, Downtown'}
+                  value={landmark}
+                  onChange={(e) => setLandmark(e.target.value)}
+                  placeholder={isAr ? 'بجوار صيدلية أو مسجد...' : 'Near pharmacy or landmark...'}
                   className="mt-1.5 w-full rounded-xl border border-white/10 bg-zinc-950/80 px-3.5 py-2.5 text-xs text-white placeholder:text-zinc-600 focus:border-amber-500 focus:outline-hidden"
                 />
               </div>
 
               <div>
                 <label className="block text-2xs font-semibold text-zinc-300">
-                  {isAr ? 'اسم الشارع *' : 'Street Name *'}
+                  {isAr ? 'ملاحظات التوصيل (للطيار)' : 'Delivery Instructions'}
                 </label>
                 <input
                   type="text"
-                  required
-                  value={street}
-                  onChange={(e) => setStreet(e.target.value)}
-                  placeholder={isAr ? 'مثال: شارع 9، شارع النصر' : 'e.g. Main St.'}
+                  value={deliveryNotes}
+                  onChange={(e) => setDeliveryNotes(e.target.value)}
+                  placeholder={isAr ? 'مثال: يرجى عدم رن الجرس، الاتصال عند الوصول' : 'e.g. Call upon arrival'}
                   className="mt-1.5 w-full rounded-xl border border-white/10 bg-zinc-950/80 px-3.5 py-2.5 text-xs text-white placeholder:text-zinc-600 focus:border-amber-500 focus:outline-hidden"
                 />
               </div>
             </div>
-
-            <div className="grid grid-cols-3 gap-3">
-              <div>
-                <label className="block text-2xs font-semibold text-zinc-300">
-                  {isAr ? 'رقم العمارة' : 'Building'}
-                </label>
-                <input
-                  type="text"
-                  value={building}
-                  onChange={(e) => setBuilding(e.target.value)}
-                  placeholder="14"
-                  className="mt-1.5 w-full rounded-xl border border-white/10 bg-zinc-950/80 px-3 py-2.5 text-xs text-white placeholder:text-zinc-600 focus:border-amber-500 focus:outline-hidden"
-                />
+          ) : (
+            <div className="rounded-2xl border border-amber-500/20 bg-amber-500/5 p-6 space-y-3">
+              <div className="flex items-center gap-2 text-sm font-bold text-amber-400">
+                <Store className="h-4 w-4" />
+                <span>{isAr ? '2. الاستلام المباشر من الفرع' : '2. Direct Store Pickup'}</span>
               </div>
-              <div>
-                <label className="block text-2xs font-semibold text-zinc-300">
-                  {isAr ? 'الطابق' : 'Floor'}
-                </label>
-                <input
-                  type="text"
-                  value={floor}
-                  onChange={(e) => setFloor(e.target.value)}
-                  placeholder="3"
-                  className="mt-1.5 w-full rounded-xl border border-white/10 bg-zinc-950/80 px-3 py-2.5 text-xs text-white placeholder:text-zinc-600 focus:border-amber-500 focus:outline-hidden"
-                />
-              </div>
-              <div>
-                <label className="block text-2xs font-semibold text-zinc-300">
-                  {isAr ? 'الشقة' : 'Apartment'}
-                </label>
-                <input
-                  type="text"
-                  value={apartment}
-                  onChange={(e) => setApartment(e.target.value)}
-                  placeholder="12"
-                  className="mt-1.5 w-full rounded-xl border border-white/10 bg-zinc-950/80 px-3 py-2.5 text-xs text-white placeholder:text-zinc-600 focus:border-amber-500 focus:outline-hidden"
-                />
-              </div>
+              <p className="text-xs text-zinc-300 leading-relaxed">
+                {isAr
+                  ? 'سيتم تجهيز طلبك في الفرع المحدد لتستلمه بنفسك بمجرد أن يصبح جاهزاً. لا توجد أي رسوم توصيل إضافية.'
+                  : 'Your order will be prepared at the selected branch for you to pick up when ready. No additional delivery fees apply.'}
+              </p>
             </div>
-
-            <div>
-              <label className="block text-2xs font-semibold text-zinc-300">
-                {isAr ? 'علامة مميزة' : 'Landmark'}
-              </label>
-              <input
-                type="text"
-                value={landmark}
-                onChange={(e) => setLandmark(e.target.value)}
-                placeholder={isAr ? 'بجوار صيدلية أو مسجد...' : 'Near pharmacy or landmark...'}
-                className="mt-1.5 w-full rounded-xl border border-white/10 bg-zinc-950/80 px-3.5 py-2.5 text-xs text-white placeholder:text-zinc-600 focus:border-amber-500 focus:outline-hidden"
-              />
-            </div>
-
-            <div>
-              <label className="block text-2xs font-semibold text-zinc-300">
-                {isAr ? 'ملاحظات التوصيل (للطيار)' : 'Delivery Instructions'}
-              </label>
-              <input
-                type="text"
-                value={deliveryNotes}
-                onChange={(e) => setDeliveryNotes(e.target.value)}
-                placeholder={isAr ? 'مثال: يرجى عدم رن الجرس، الاتصال عند الوصول' : 'e.g. Call upon arrival'}
-                className="mt-1.5 w-full rounded-xl border border-white/10 bg-zinc-950/80 px-3.5 py-2.5 text-xs text-white placeholder:text-zinc-600 focus:border-amber-500 focus:outline-hidden"
-              />
-            </div>
-          </div>
+          )}
 
           {/* 3. Kitchen Notes */}
           <div className="rounded-2xl border border-white/10 bg-zinc-900/60 p-6 space-y-4 shadow-sm">
@@ -377,7 +465,11 @@ export function CheckoutClient({
               </div>
               <div className="flex items-center justify-between">
                 <span>{isAr ? 'رسوم التوصيل' : 'Delivery Fee'}</span>
-                <span className="font-mono">{formatPrice(deliveryFeeMinor)} {currencySymbol}</span>
+                {orderType === 'TAKEAWAY' ? (
+                  <span className="text-emerald-400 font-semibold">{isAr ? 'مجاني (استلام من الفرع)' : 'Free (Store Pickup)'}</span>
+                ) : (
+                  <span className="font-mono">{formatPrice(deliveryFeeMinor)} {currencySymbol}</span>
+                )}
               </div>
               {taxMinor > 0 && (
                 <div className="flex items-center justify-between">
@@ -398,9 +490,15 @@ export function CheckoutClient({
               <CheckCircle2 className="h-4 w-4 text-emerald-500 shrink-0" />
               <div className="text-2xs text-zinc-300">
                 <span className="font-bold text-white block">
-                  {isAr ? 'الدفع نقداً عند الاستلام' : 'Cash on Delivery'}
+                  {orderType === 'TAKEAWAY'
+                    ? (isAr ? 'الدفع عند الاستلام بالفرع' : 'Pay on Pickup at Store')
+                    : (isAr ? 'الدفع نقداً عند الاستلام' : 'Cash on Delivery')}
                 </span>
-                <span>{isAr ? 'يتم الدفع لمندوب التوصيل عند استلام الوجبة' : 'Pay in cash upon arrival'}</span>
+                <span>
+                  {orderType === 'TAKEAWAY'
+                    ? (isAr ? 'يتم الدفع كاش أو بالبطاقة عند استلام الوجبة من الفرع' : 'Pay by cash or card when collecting your order at the branch')
+                    : (isAr ? 'يتم الدفع لمندوب التوصيل عند استلام الوجبة' : 'Pay in cash upon arrival')}
+                </span>
               </div>
             </div>
 
@@ -408,15 +506,23 @@ export function CheckoutClient({
             <button
               type="submit"
               disabled={isSubmitting}
-              className="w-full flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-rose-600 to-amber-600 py-3.5 text-xs font-bold text-white shadow-xl hover:opacity-95 disabled:opacity-50 transition-opacity"
+              className="w-full flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-rose-600 to-amber-600 py-3.5 text-xs font-bold text-white shadow-xl hover:opacity-95 disabled:opacity-50 transition-opacity cursor-pointer"
             >
-              <Truck className="h-4 w-4" />
-              <span>{isSubmitting ? (isAr ? 'جاري تأكيد الطلب...' : 'Submitting Order...') : (isAr ? 'تأكيد وإرسال الطلب الآن' : 'Confirm & Place Order')}</span>
+              {orderType === 'TAKEAWAY' ? <ShoppingBag className="h-4 w-4" /> : <Truck className="h-4 w-4" />}
+              <span>
+                {isSubmitting
+                  ? (isAr ? 'جاري تأكيد الطلب...' : 'Submitting Order...')
+                  : (orderType === 'TAKEAWAY' ? (isAr ? 'تأكيد وإرسال طلب الاستلام' : 'Confirm Pickup Order') : (isAr ? 'تأكيد وإرسال الطلب الآن' : 'Confirm & Place Order'))}
+              </span>
             </button>
 
             <div className="flex items-center gap-2 pt-1 text-3xs text-zinc-400 justify-center">
               <ShieldCheck className="h-3.5 w-3.5 text-emerald-500" />
-              <span>{isAr ? 'طلب مباشر وموثوق من قهوة كايرو' : 'Direct & Verified Order from Qahwet Cairo'}</span>
+              <span>
+                {isAr
+                  ? `طلب مباشر وموثوق من ${restaurantNameAr || 'المطعم'}`
+                  : `Direct & Verified Order from ${restaurantNameEn || 'the restaurant'}`}
+              </span>
             </div>
           </div>
         </div>

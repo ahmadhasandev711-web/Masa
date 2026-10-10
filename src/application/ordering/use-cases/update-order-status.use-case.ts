@@ -1,5 +1,5 @@
 import { prisma } from '../../../infrastructure/db/prisma';
-import { NotFoundError, ValidationError } from '../../../domain/shared/errors/domain-error';
+import { ForbiddenError, NotFoundError, ValidationError } from '../../../domain/shared/errors/domain-error';
 import { OrderStatus, PaymentMethod, PaymentStatus } from '../../../domain/ordering/enums';
 import { OrderStateMachineService } from '../../../domain/ordering/services/order-state-machine.service';
 import { InventoryMovementType } from '../../../domain/inventory/enums';
@@ -7,7 +7,7 @@ import { OrderInventoryDeductionService } from '../../../infrastructure/inventor
 import { UpdateOrderStatusDto, updateOrderStatusSchema } from '../dto/order.dto';
 
 export class UpdateOrderStatusUseCase {
-  public async execute(input: UpdateOrderStatusDto) {
+  public async execute(input: UpdateOrderStatusDto & { userId?: string; allowedBranchIds?: string[] }) {
     const validated = updateOrderStatusSchema.parse(input);
 
     const targetStatus = validated.nextStatus as OrderStatus;
@@ -32,6 +32,10 @@ export class UpdateOrderStatusUseCase {
 
     if (!order) {
       throw new NotFoundError('الطلب', validated.orderId);
+    }
+
+    if (input.allowedBranchIds && order.branchId && !input.allowedBranchIds.includes(order.branchId)) {
+      throw new ForbiddenError('غير مصرح لك بتعديل حالة طلب تابع لفرع آخر');
     }
 
     const currentStatus = order.status as OrderStatus;

@@ -18,8 +18,16 @@ type Product = {
   modifierGroups: { group: { id: string; nameAr: string } }[];
   branchAvailability: { branchId: string; isAvailable: boolean }[];
 };
-type Branch = { id: string; code: string; nameAr: string };
-type CatalogProps = { categories: Category[]; products: Product[]; modifierGroups: Group[]; branches: Branch[]; currency: string | null };
+type Branch = { id: string; code: string; nameAr: string; phone?: string | null };
+type CatalogProps = {
+  categories: Category[];
+  products: Product[];
+  modifierGroups: Group[];
+  branches: Branch[];
+  currency: string | null;
+  restaurantNameAr?: string;
+  restaurantNameEn?: string;
+};
 type Tab = 'products' | 'categories' | 'modifiers';
 type DraftSize = { nameAr: string; nameEn: string; price: string };
 type DraftModifier = { nameAr: string; nameEn: string; price: string };
@@ -35,7 +43,16 @@ function money(value: number, currency: string | null) {
 
 function toMajor(value: number) { return (value / 100).toFixed(2); }
 
-export function MenuManager({ categories: initialCategories, products: initialProducts, modifierGroups: initialGroups, branches, currency }: CatalogProps) {
+export function MenuManager({
+  categories: initialCategories,
+  products: initialProducts,
+  modifierGroups: initialGroups,
+  branches,
+  currency,
+  restaurantNameAr = 'المطعم',
+  restaurantNameEn = 'Restaurant',
+}: CatalogProps) {
+
   const [categories, setCategories] = useState(initialCategories);
   const [products, setProducts] = useState(initialProducts);
   const [groups, setGroups] = useState(initialGroups);
@@ -264,10 +281,11 @@ export function MenuManager({ categories: initialCategories, products: initialPr
       <MenuQrModal
         isOpen={isQrModalOpen}
         onClose={() => setIsQrModalOpen(false)}
-        restaurantNameAr="قهوة كايرو"
-        restaurantNameEn="Qahwet Cairo"
-        branches={branches.map((b) => ({ id: b.id, nameAr: b.nameAr, phone: '01000000000' }))}
+        restaurantNameAr={restaurantNameAr}
+        restaurantNameEn={restaurantNameEn}
+        branches={branches.map((b) => ({ id: b.id, nameAr: b.nameAr, phone: b.phone || '' }))}
       />
+
     </div>
   );
 }

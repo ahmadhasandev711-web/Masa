@@ -38,7 +38,7 @@ export interface KitchenOrderTicketProps {
 
 export function KitchenOrderTicketPrint({
   ticket,
-  restaurantName = 'قهوة كايرو',
+  restaurantName = 'المطعم',
 }: KitchenOrderTicketProps) {
   if (!ticket) return null;
 
@@ -177,7 +177,7 @@ export function KitchenOrderTicketPrint({
       {/* Footer */}
       <footer className="pt-2 text-center text-[10px] space-y-0.5 font-bold">
         <p>*** نهاية تذكرة المطبخ ***</p>
-        <p className="text-[9px] text-zinc-600 font-sans">Qahwet Cairo Order Ticket (Barista / Kitchen)</p>
+        <p className="text-[9px] text-zinc-600 font-sans">{restaurantName} Order Ticket (Barista / Kitchen)</p>
       </footer>
     </section>
   );
