@@ -26,6 +26,8 @@ import {
 import { listOrdersAction } from '../../../actions/order.actions';
 import { ThermalReceipt } from '../orders/thermal-receipt';
 import { KitchenOrderTicketPrint, KitchenTicketData } from '../../../../components/printing/kitchen-order-ticket';
+import { InvoiceDetailModal } from './components/invoice-detail-modal';
+import { InvoiceFilterToolbar } from './components/invoice-filter-toolbar';
 
 export interface BranchOption {
   id: string;
@@ -140,7 +142,19 @@ export interface InvoiceMetrics {
   pendingCount: number;
 }
 
-type DatePreset = 'ALL' | 'TODAY' | 'YESTERDAY' | 'WEEK' | 'MONTH' | 'CUSTOM';
+export type DatePreset = 'ALL' | 'TODAY' | 'YESTERDAY' | 'WEEK' | 'MONTH' | 'CUSTOM';
+
+export interface InvoiceFilterValues {
+  branchId: string;
+  source: string;
+  type: string;
+  paymentStatus: string;
+  paymentMethod: string;
+  cashierId: string;
+  datePreset: DatePreset;
+  dateFrom: string;
+  dateTo: string;
+}
 
 function getDateRangeForPreset(preset: DatePreset): { dateFrom: string; dateTo: string } {
   const today = new Date();
@@ -649,238 +663,17 @@ export function InvoicesClient({
         </div>
       </div>
 
-      {/* 3. Sleek Command Control Bar (Modern, Unified, No Visual Clutter) */}
-      <div className="bg-white p-4 rounded-2xl border border-zinc-200 shadow-2xs space-y-3.5">
-        {/* Tier 1: Search + Quick Date Range Buttons */}
-        <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3">
-          {/* Search Input */}
-          <div className="relative flex-1">
-            <Search className="w-4 h-4 absolute right-3.5 top-3 text-zinc-400" />
-            <input
-              type="text"
-              placeholder="بحث برقم الفاتورة، اسم الزبون، أو الطاولة..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pr-10 pl-8 py-2 text-xs border border-zinc-200 rounded-xl focus:ring-1 focus:ring-zinc-800 outline-hidden font-medium placeholder:text-zinc-400 bg-zinc-50/50 focus:bg-white transition"
-            />
-            {searchQuery && (
-              <button
-                type="button"
-                onClick={handleClearSearch}
-                className="absolute left-2.5 top-2.5 text-zinc-400 hover:text-zinc-600 cursor-pointer"
-                title="مسح البحث"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            )}
-          </div>
-
-          {/* Quick Date Range - Desktop View (Hidden on mobile, flex on sm+) */}
-          <div className="hidden sm:flex items-center gap-1 bg-zinc-100/80 p-1 rounded-xl text-xs">
-            {[
-              { id: 'ALL', label: 'الكل' },
-              { id: 'TODAY', label: 'اليوم' },
-              { id: 'YESTERDAY', label: 'أمس' },
-              { id: 'WEEK', label: 'آخر 7 أيام' },
-              { id: 'MONTH', label: 'هذا الشهر' },
-              { id: 'CUSTOM', label: 'مخصص' },
-            ].map((preset) => (
-              <button
-                key={preset.id}
-                type="button"
-                onClick={() => handleDatePresetChange(preset.id as DatePreset)}
-                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition whitespace-nowrap cursor-pointer ${
-                  filters.datePreset === preset.id
-                    ? 'bg-zinc-900 text-white shadow-2xs'
-                    : 'text-zinc-600 hover:text-zinc-900 hover:bg-zinc-200/60'
-                }`}
-              >
-                {preset.label}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {/* Quick Date Range - Mobile View (Grid 3x2: Full width, zero clipping, touch-optimized) */}
-        <div className="grid sm:hidden grid-cols-3 gap-1 bg-zinc-100/80 p-1 rounded-xl text-xs w-full">
-          {[
-            { id: 'ALL', label: 'الكل' },
-            { id: 'TODAY', label: 'اليوم' },
-            { id: 'YESTERDAY', label: 'أمس' },
-            { id: 'WEEK', label: 'آخر 7 أيام' },
-            { id: 'MONTH', label: 'هذا الشهر' },
-            { id: 'CUSTOM', label: 'مخصص' },
-          ].map((preset) => (
-            <button
-              key={preset.id}
-              type="button"
-              onClick={() => handleDatePresetChange(preset.id as DatePreset)}
-              className={`w-full py-2 px-1 text-center rounded-lg text-xs font-bold transition cursor-pointer ${
-                filters.datePreset === preset.id
-                  ? 'bg-zinc-900 text-white shadow-2xs'
-                  : 'text-zinc-600 hover:text-zinc-900 hover:bg-zinc-200/60'
-              }`}
-            >
-              {preset.label}
-            </button>
-          ))}
-        </div>
-
-        {/* Custom Date Pickers (Shown only if 'CUSTOM' selected) */}
-        {filters.datePreset === 'CUSTOM' && (
-          <div className="p-3 bg-zinc-50 rounded-xl border border-zinc-200/70 text-xs animate-in fade-in duration-150 space-y-2">
-            <div className="flex items-center gap-1.5 font-bold text-zinc-700">
-              <Calendar className="w-3.5 h-3.5 text-zinc-500" />
-              <span>تحديد الفترة الزمنية المخصصة:</span>
-            </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-              <div className="flex items-center gap-2 bg-white px-3 py-1.5 border border-zinc-200 rounded-lg">
-                <span className="text-[11px] font-bold text-zinc-400 whitespace-nowrap">من:</span>
-                <input
-                  type="date"
-                  value={filters.dateFrom}
-                  onChange={(e) => updateFilter({ dateFrom: e.target.value })}
-                  className="w-full bg-transparent text-xs font-medium text-zinc-800 outline-hidden"
-                  title="من تاريخ"
-                />
-              </div>
-              <div className="flex items-center gap-2 bg-white px-3 py-1.5 border border-zinc-200 rounded-lg">
-                <span className="text-[11px] font-bold text-zinc-400 whitespace-nowrap">إلى:</span>
-                <input
-                  type="date"
-                  value={filters.dateTo}
-                  onChange={(e) => updateFilter({ dateTo: e.target.value })}
-                  className="w-full bg-transparent text-xs font-medium text-zinc-800 outline-hidden"
-                  title="إلى تاريخ"
-                />
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Tier 2: Status, Type, and Select Dropdowns */}
-        <div className="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-3 pt-3 border-t border-zinc-100 text-xs">
-          <div className="flex flex-wrap items-center gap-2">
-            {/* Status Pills */}
-            <div className="flex items-center gap-1 bg-zinc-50 p-1 rounded-xl border border-zinc-200/70">
-              <span className="text-[10px] text-zinc-400 font-bold px-1">السداد:</span>
-              {[
-                { id: 'ALL', label: 'الكل' },
-                { id: 'PAID', label: 'مدفوعة' },
-                { id: 'PENDING', label: 'شيك مفتوح' },
-              ].map((tab) => (
-                <button
-                  key={tab.id}
-                  type="button"
-                  onClick={() => updateFilter({ paymentStatus: tab.id })}
-                  className={`px-2.5 py-1 rounded-lg text-xs font-bold transition cursor-pointer ${
-                    filters.paymentStatus === tab.id
-                      ? tab.id === 'PAID'
-                        ? 'bg-emerald-600 text-white shadow-2xs'
-                        : tab.id === 'PENDING'
-                        ? 'bg-rose-600 text-white shadow-2xs'
-                        : 'bg-zinc-900 text-white shadow-2xs'
-                      : 'text-zinc-600 hover:text-zinc-900 hover:bg-zinc-100'
-                  }`}
-                >
-                  {tab.label}
-                </button>
-              ))}
-            </div>
-
-            {/* Type Pills */}
-            <div className="flex items-center gap-1 bg-zinc-50 p-1 rounded-xl border border-zinc-200/70">
-              <span className="text-[10px] text-zinc-400 font-bold px-1">النوع:</span>
-              {[
-                { id: 'ALL', label: 'الكل' },
-                { id: 'DINE_IN', label: 'صالة' },
-                { id: 'TAKEAWAY', label: 'سفري' },
-                { id: 'DELIVERY', label: 'توصيل' },
-              ].map((tab) => (
-                <button
-                  key={tab.id}
-                  type="button"
-                  onClick={() => updateFilter({ type: tab.id })}
-                  className={`px-2.5 py-1 rounded-lg text-xs font-bold transition cursor-pointer ${
-                    filters.type === tab.id
-                      ? 'bg-zinc-900 text-white shadow-2xs'
-                      : 'text-zinc-600 hover:text-zinc-900 hover:bg-zinc-100'
-                  }`}
-                >
-                  {tab.label}
-                </button>
-              ))}
-            </div>
-
-            {/* Channel Pills */}
-            <div className="flex items-center gap-1 bg-zinc-50 p-1 rounded-xl border border-zinc-200/70">
-              <span className="text-[10px] text-zinc-400 font-bold px-1">القناة:</span>
-              {[
-                { id: 'ALL', label: 'الكل' },
-                { id: 'POS', label: 'كاشير' },
-                { id: 'ONLINE', label: 'أونلاين' },
-              ].map((tab) => (
-                <button
-                  key={tab.id}
-                  type="button"
-                  onClick={() => updateFilter({ source: tab.id })}
-                  className={`px-2.5 py-1 rounded-lg text-xs font-bold transition cursor-pointer ${
-                    filters.source === tab.id
-                      ? 'bg-zinc-900 text-white shadow-2xs'
-                      : 'text-zinc-600 hover:text-zinc-900 hover:bg-zinc-100'
-                  }`}
-                >
-                  {tab.label}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Secondary Dropdowns - Responsive Grid on Mobile, Flex on Desktop */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 lg:flex lg:items-center gap-2 w-full lg:w-auto">
-            {/* Branch Select */}
-            <select
-              value={filters.branchId}
-              disabled={isBranchRestricted}
-              onChange={(e) => updateFilter({ branchId: e.target.value })}
-              className="w-full lg:w-auto px-2.5 py-1.5 text-xs border border-zinc-200 rounded-xl bg-white font-medium text-zinc-800 focus:ring-1 focus:ring-zinc-800 outline-hidden cursor-pointer"
-            >
-              <option value="ALL">جميع الفروع</option>
-              {branches.map((b) => (
-                <option key={b.id} value={b.id}>
-                  {b.nameAr}
-                </option>
-              ))}
-            </select>
-
-            {/* Cashier Select */}
-            <select
-              value={filters.cashierId}
-              onChange={(e) => updateFilter({ cashierId: e.target.value })}
-              className="w-full lg:w-auto px-2.5 py-1.5 text-xs border border-zinc-200 rounded-xl bg-white font-medium text-zinc-800 focus:ring-1 focus:ring-zinc-800 outline-hidden cursor-pointer"
-            >
-              <option value="ALL">جميع الكاشير</option>
-              {cashiers.map((c) => (
-                <option key={c.id} value={c.id}>
-                  {c.fullName}
-                </option>
-              ))}
-            </select>
-
-            {/* Payment Method Select */}
-            <select
-              value={filters.paymentMethod}
-              onChange={(e) => updateFilter({ paymentMethod: e.target.value })}
-              className="w-full lg:w-auto px-2.5 py-1.5 text-xs border border-zinc-200 rounded-xl bg-white font-medium text-zinc-800 focus:ring-1 focus:ring-zinc-800 outline-hidden cursor-pointer"
-            >
-              <option value="ALL">طرق الدفع</option>
-              <option value="CASH">نقدي</option>
-              <option value="CARD">بطاقة</option>
-              <option value="MIXED">مختلط</option>
-            </select>
-          </div>
-        </div>
-      </div>
+      {/* 3. Sleek Command Control Bar (Decomposed Component) */}
+      <InvoiceFilterToolbar
+        filters={filters}
+        searchQuery={searchQuery}
+        branches={branches}
+        cashiers={cashiers}
+        isBranchRestricted={isBranchRestricted}
+        onSearchChange={setSearchQuery}
+        onDatePresetChange={handleDatePresetChange}
+        onUpdateFilter={updateFilter}
+      />
 
       {/* 4. Invoices Audit Table (Stable, Fluid, Zero Layout Shift) */}
       <div className="bg-white rounded-2xl border border-zinc-200 shadow-2xs overflow-hidden">
@@ -1303,251 +1096,14 @@ export function InvoicesClient({
         )}
       </div>
 
-      {/* 6. Detailed Invoice Audit Modal */}
-      {selectedInvoice && (
-        <div
-          className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 overflow-y-auto animate-in fade-in duration-150"
-          onClick={() => setSelectedInvoice(null)}
-        >
-          <div
-            className="bg-white w-full max-w-2xl rounded-2xl shadow-2xl border border-zinc-200 overflow-hidden flex flex-col max-h-[90vh]"
-            onClick={(e) => e.stopPropagation()}
-            dir="rtl"
-          >
-            {/* Modal Header */}
-            <div className="flex items-center justify-between p-4 border-b border-zinc-200 bg-zinc-50">
-              <div className="flex items-center gap-2.5">
-                <div className="p-2 rounded-xl bg-zinc-900 text-white shadow-xs">
-                  <Receipt className="w-5 h-5" />
-                </div>
-                <div>
-                  <div className="flex items-center gap-2">
-                    <h3 className="font-bold text-base text-zinc-900">
-                      فاتورة #{selectedInvoice.orderNumber}
-                    </h3>
-                    {selectedInvoice.paymentStatus === 'PAID' ? (
-                      <span className="px-2 py-0.5 rounded text-[11px] font-bold bg-emerald-100 text-emerald-800">
-                        مسددة بالكامل
-                      </span>
-                    ) : (
-                      <span className="px-2 py-0.5 rounded text-[11px] font-bold bg-rose-100 text-rose-800">
-                        شيك مفتوح / معلق
-                      </span>
-                    )}
-                  </div>
-                  <span className="text-xs text-zinc-500 font-mono">
-                    {new Date(selectedInvoice.createdAt).toLocaleString('ar-EG', {
-                      dateStyle: 'full',
-                      timeStyle: 'medium',
-                    })}
-                  </span>
-                </div>
-              </div>
-
-              {/* Header Actions */}
-              <div className="flex items-center gap-2">
-                <button
-                  type="button"
-                  onClick={() => handlePrintThermal(selectedInvoice)}
-                  className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-zinc-700 bg-white border border-zinc-200 rounded-lg hover:bg-zinc-100 transition shadow-2xs cursor-pointer"
-                  title="طباعة إيصال الفاتورة الحراري"
-                >
-                  <Printer className="w-3.5 h-3.5" />
-                  <span>طباعة فاتورة</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => handlePrintKot(selectedInvoice)}
-                  className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-zinc-700 bg-white border border-zinc-200 rounded-lg hover:bg-zinc-100 transition shadow-2xs cursor-pointer"
-                  title="طباعة بون المطبخ"
-                >
-                  <ChefHat className="w-3.5 h-3.5" />
-                  <span>بون المطبخ</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setSelectedInvoice(null)}
-                  className="p-1.5 rounded-lg text-zinc-400 hover:text-zinc-700 hover:bg-zinc-100 transition cursor-pointer"
-                >
-                  <X className="w-5 h-5" />
-                </button>
-              </div>
-            </div>
-
-            {/* Modal Body: Scrollable Audit Details */}
-            <div className="p-5 overflow-y-auto space-y-5 flex-1">
-              {/* Meta Grid */}
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 p-3.5 rounded-xl bg-zinc-50 border border-zinc-100 text-xs">
-                <div>
-                  <span className="text-zinc-400 block text-[11px]">الفرع</span>
-                  <span className="font-bold text-zinc-800 mt-0.5 block">
-                    {selectedInvoice.branch?.nameAr || 'الفرع الرئيسي'}
-                  </span>
-                </div>
-                <div>
-                  <span className="text-zinc-400 block text-[11px]">الكاشير المسؤول</span>
-                  <span className="font-bold text-zinc-800 mt-0.5 block">
-                    {selectedInvoice.cashier?.fullName || 'الموقع العام'}
-                  </span>
-                </div>
-                <div>
-                  <span className="text-zinc-400 block text-[11px]">نوع الطلب والقناة</span>
-                  <span className="font-bold text-zinc-800 mt-0.5 block">
-                    {selectedInvoice.type === 'DINE_IN'
-                      ? `صالة (${selectedInvoice.tableName || 'طاولة'})`
-                      : selectedInvoice.type === 'TAKEAWAY'
-                      ? 'سفري'
-                      : 'توصيل'}
-                    {' • '}
-                    {selectedInvoice.source === 'POS' ? 'كاشير' : 'الموقع'}
-                  </span>
-                </div>
-                <div>
-                  <span className="text-zinc-400 block text-[11px]">طريقة السداد</span>
-                  <span className="font-bold text-zinc-800 mt-0.5 block">
-                    {selectedInvoice.paymentMethod === 'CASH'
-                      ? 'نقدي'
-                      : selectedInvoice.paymentMethod === 'CARD'
-                      ? 'بطاقة دفع'
-                      : selectedInvoice.paymentMethod === 'MIXED'
-                      ? 'دفع مختلط'
-                      : selectedInvoice.paymentMethod}
-                  </span>
-                </div>
-              </div>
-
-              {/* Items Breakdown Table */}
-              <div>
-                <h4 className="text-xs font-bold text-zinc-900 mb-2.5">تفاصيل الأصناف والكميات</h4>
-                <div className="border border-zinc-200 rounded-xl overflow-hidden">
-                  <table className="w-full text-right text-xs">
-                    <thead className="bg-zinc-50 text-zinc-500 font-bold border-b border-zinc-200">
-                      <tr>
-                        <th className="py-2.5 px-3">الصنف والمقاس</th>
-                        <th className="py-2.5 px-3 text-center">الكمية</th>
-                        <th className="py-2.5 px-3 text-left">سعر الوحدة</th>
-                        <th className="py-2.5 px-3 text-left">الإجمالي</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-zinc-100">
-                      {selectedInvoice.items.map((item) => (
-                        <tr key={item.id} className="hover:bg-zinc-50/50">
-                          <td className="py-2.5 px-3">
-                            <span className="font-bold text-zinc-900">{item.productNameAr}</span>
-                            {item.sizeNameAr && (
-                              <span className="text-zinc-400 mr-1.5">({item.sizeNameAr})</span>
-                            )}
-                            {item.modifiers.length > 0 && (
-                              <div className="text-[11px] text-zinc-500 mt-0.5 space-y-0.5">
-                                {item.modifiers.map((m) => (
-                                  <div key={m.id}>
-                                    + {m.nameAr}{' '}
-                                    {m.priceDeltaMinor > 0 && `(${formatMoney(m.priceDeltaMinor)})`}
-                                  </div>
-                                ))}
-                              </div>
-                            )}
-                          </td>
-                          <td className="py-2.5 px-3 text-center font-bold font-mono">
-                            {item.quantity}×
-                          </td>
-                          <td className="py-2.5 px-3 text-left font-mono text-zinc-600">
-                            {formatMoney(item.unitPriceMinor)}
-                          </td>
-                          <td className="py-2.5 px-3 text-left font-bold font-mono text-zinc-900">
-                            {formatMoney(item.totalPriceMinor)}
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-
-              {/* Payments & Financial Totals Grid */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                {/* Payments Log */}
-                <div className="p-3.5 rounded-xl border border-zinc-200 bg-zinc-50/50 space-y-2">
-                  <span className="text-xs font-bold text-zinc-900 block">سجل الدفعات المحصلة</span>
-                  {selectedInvoice.payments && selectedInvoice.payments.length > 0 ? (
-                    <div className="space-y-1.5">
-                      {selectedInvoice.payments.map((p) => (
-                        <div
-                          key={p.id}
-                          className="flex items-center justify-between text-xs p-2 rounded-lg bg-white border border-zinc-200"
-                        >
-                          <div className="flex items-center gap-1.5">
-                            {p.method === 'CASH' ? (
-                              <Banknote className="w-3.5 h-3.5 text-emerald-600" />
-                            ) : (
-                              <CreditCard className="w-3.5 h-3.5 text-blue-600" />
-                            )}
-                            <span className="font-medium text-zinc-800">
-                              {p.method === 'CASH' ? 'نقدي' : 'بطاقة'}
-                            </span>
-                          </div>
-                          <span className="font-bold font-mono text-zinc-900">
-                            {formatMoney(p.amountMinor)}
-                          </span>
-                        </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <p className="text-xs text-zinc-400 italic">
-                      {selectedInvoice.paymentStatus === 'PAID'
-                        ? 'تم التحصيل بالكامل عند إغلاق الفاتورة'
-                        : 'لم يتم تسجيل دفعات بعد (شيك مفتوح)'}
-                    </p>
-                  )}
-                </div>
-
-                {/* Financial Summary */}
-                <div className="p-3.5 rounded-xl border border-zinc-200 bg-zinc-50 space-y-1.5 text-xs">
-                  <div className="flex justify-between text-zinc-600">
-                    <span>المجموع الفرعي:</span>
-                    <span className="font-mono">{formatMoney(selectedInvoice.subtotalMinor)}</span>
-                  </div>
-                  {selectedInvoice.deliveryFeeMinor > 0 && (
-                    <div className="flex justify-between text-zinc-600">
-                      <span>رسوم التوصيل:</span>
-                      <span className="font-mono">{formatMoney(selectedInvoice.deliveryFeeMinor)}</span>
-                    </div>
-                  )}
-                  {selectedInvoice.taxMinor > 0 && (
-                    <div className="flex justify-between text-zinc-600">
-                      <span>ضريبة القيمة المضافة:</span>
-                      <span className="font-mono">{formatMoney(selectedInvoice.taxMinor)}</span>
-                    </div>
-                  )}
-                  {selectedInvoice.discountMinor > 0 && (
-                    <div className="flex justify-between text-emerald-600 font-bold">
-                      <span>الخصم المطبق:</span>
-                      <span className="font-mono">-{formatMoney(selectedInvoice.discountMinor)}</span>
-                    </div>
-                  )}
-                  <div className="border-t border-zinc-200 pt-2 mt-2 flex justify-between font-black text-sm text-zinc-900">
-                    <span>الإجمالي النهائي:</span>
-                    <span className="font-mono text-base text-emerald-600">
-                      {formatMoney(selectedInvoice.totalMinor)}
-                    </span>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Modal Footer */}
-            <div className="p-3 bg-zinc-50 border-t border-zinc-200 flex justify-end">
-              <button
-                type="button"
-                onClick={() => setSelectedInvoice(null)}
-                className="px-4 py-2 bg-zinc-200 hover:bg-zinc-300 text-zinc-800 rounded-xl text-xs font-bold transition cursor-pointer"
-              >
-                إغلاق
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* 6. Detailed Invoice Audit Modal (Decomposed Component) */}
+      <InvoiceDetailModal
+        selectedInvoice={selectedInvoice}
+        onClose={() => setSelectedInvoice(null)}
+        onPrintThermal={handlePrintThermal}
+        onPrintKot={handlePrintKot}
+        formatMoney={formatMoney}
+      />
     </div>
   );
 }

@@ -34,13 +34,9 @@ import {
   updateTableSectionAction,
   deleteTableSectionAction,
 } from '../../../actions/table.actions';
-
-interface SectionItem {
-  id: string;
-  nameAr: string;
-  nameEn: string;
-  sortOrder: number;
-}
+import { EditTableModal, SectionItem } from './components/edit-table-modal';
+import { ManageSectionsModal } from './components/manage-sections-modal';
+import { TableQrModal } from './components/table-qr-modal';
 
 interface TablesClientProps {
   initialSections: SectionItem[];
@@ -745,417 +741,55 @@ export function TablesClient({
       )}
 
       {/* 5. Modal: Add / Edit Table */}
-      {isTableModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-xs animate-in fade-in">
-          <div className="w-full max-w-md rounded-2xl bg-white p-5 shadow-2xl animate-in zoom-in-95">
-            <div className="flex items-center justify-between border-b border-zinc-100 pb-3">
-              <h3 className="text-base font-bold text-zinc-900">
-                {editingTable ? `تعديل طاولة ${editingTable.tableNumber}` : 'إضافة طاولة جديدة'}
-              </h3>
-              <button
-                type="button"
-                onClick={() => setIsTableModalOpen(false)}
-                className="rounded-lg p-1 text-zinc-400 hover:bg-zinc-100 hover:text-zinc-700"
-              >
-                <X className="size-4" />
-              </button>
-            </div>
-
-            <form onSubmit={handleSaveTable} className="mt-4 space-y-3.5 text-xs">
-              <div>
-                <label className="block font-semibold text-zinc-700 mb-1">
-                  رقم أو اسم الطاولة <span className="text-rose-600">*</span>
-                </label>
-                <input
-                  type="text"
-                  required
-                  placeholder="مثال: 1 أو T-01 أو طاولة VIP"
-                  value={tableNumber}
-                  onChange={(e) => setTableNumber(e.target.value)}
-                  className="w-full rounded-xl border border-zinc-200 px-3 py-2 text-zinc-900 focus:outline-none focus:ring-2 focus:ring-zinc-900"
-                />
-              </div>
-
-              <div>
-                <label className="block font-semibold text-zinc-700 mb-1">قسم الصالة / القاعة</label>
-                <select
-                  value={tableSectionId}
-                  onChange={(e) => setTableSectionId(e.target.value)}
-                  className="w-full rounded-xl border border-zinc-200 bg-white px-3 py-2 text-zinc-900 focus:outline-none focus:ring-2 focus:ring-zinc-900"
-                >
-                  <option value="">بدون قسم (صالة عامة)</option>
-                  {sections.map((sec) => (
-                    <option key={sec.id} value={sec.id}>
-                      {sec.nameAr} ({sec.nameEn})
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block font-semibold text-zinc-700 mb-1">
-                    سعة المقاعد (أفراد) <span className="text-rose-600">*</span>
-                  </label>
-                  <input
-                    type="number"
-                    min="1"
-                    max="50"
-                    required
-                    value={tableCapacity}
-                    onChange={(e) => setTableCapacity(parseInt(e.target.value) || 1)}
-                    className="w-full rounded-xl border border-zinc-200 px-3 py-2 text-zinc-900 focus:outline-none focus:ring-2 focus:ring-zinc-900"
-                  />
-                </div>
-
-                <div>
-                  <label className="block font-semibold text-zinc-700 mb-1">ترتيب العرض</label>
-                  <input
-                    type="number"
-                    min="0"
-                    value={tableSortOrder}
-                    onChange={(e) => setTableSortOrder(parseInt(e.target.value) || 0)}
-                    className="w-full rounded-xl border border-zinc-200 px-3 py-2 text-zinc-900 focus:outline-none focus:ring-2 focus:ring-zinc-900"
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="block font-semibold text-zinc-700 mb-1.5">شكل الطاولة</label>
-                <div className="grid grid-cols-3 gap-2">
-                  <button
-                    type="button"
-                    onClick={() => setTableShape(TableShape.SQUARE)}
-                    className={`flex items-center justify-center gap-1.5 rounded-xl border py-2 font-medium transition ${
-                      tableShape === TableShape.SQUARE
-                        ? 'border-zinc-900 bg-zinc-900 text-white shadow-2xs'
-                        : 'border-zinc-200 bg-zinc-50 text-zinc-700 hover:bg-zinc-100'
-                    }`}
-                  >
-                    <Square className="size-3.5" />
-                    <span>مربعة</span>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => setTableShape(TableShape.ROUND)}
-                    className={`flex items-center justify-center gap-1.5 rounded-xl border py-2 font-medium transition ${
-                      tableShape === TableShape.ROUND
-                        ? 'border-zinc-900 bg-zinc-900 text-white shadow-2xs'
-                        : 'border-zinc-200 bg-zinc-50 text-zinc-700 hover:bg-zinc-100'
-                    }`}
-                  >
-                    <Circle className="size-3.5" />
-                    <span>دائرية</span>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => setTableShape(TableShape.RECTANGLE)}
-                    className={`flex items-center justify-center gap-1.5 rounded-xl border py-2 font-medium transition ${
-                      tableShape === TableShape.RECTANGLE
-                        ? 'border-zinc-900 bg-zinc-900 text-white shadow-2xs'
-                        : 'border-zinc-200 bg-zinc-50 text-zinc-700 hover:bg-zinc-100'
-                    }`}
-                  >
-                    <RectangleHorizontal className="size-3.5" />
-                    <span>مستطيلة</span>
-                  </button>
-                </div>
-              </div>
-
-              {/* Status Selector (when editing, only allowed non-occupied transitions) */}
-              {editingTable && (
-                <div>
-                  <label className="block font-semibold text-zinc-700 mb-1">حالة الطاولة</label>
-                  <select
-                    value={tableStatus}
-                    onChange={(e) => setTableStatus(e.target.value as TableStatus)}
-                    className="w-full rounded-xl border border-zinc-200 bg-white px-3 py-2 text-zinc-900 focus:outline-none focus:ring-2 focus:ring-zinc-900"
-                  >
-                    <option value={TableStatus.AVAILABLE}>متاحة (AVAILABLE)</option>
-                    <option value={TableStatus.RESERVED}>محجوزة (RESERVED)</option>
-                    <option value={TableStatus.CLEANING}>قيد التنظيف (CLEANING)</option>
-                    {editingTable.status === TableStatus.OCCUPIED && (
-                      <option value={TableStatus.OCCUPIED} disabled>
-                        مشغولة بطلب جاري
-                      </option>
-                    )}
-                    {editingTable.status === TableStatus.BILL_PRINTED && (
-                      <option value={TableStatus.BILL_PRINTED} disabled>
-                        مطبوع الشيك (بانتظار الدفع)
-                      </option>
-                    )}
-                  </select>
-                </div>
-              )}
-
-              <div className="flex items-center justify-end gap-2 pt-3 border-t border-zinc-100">
-                <button
-                  type="button"
-                  onClick={() => setIsTableModalOpen(false)}
-                  className="rounded-xl border border-zinc-200 px-4 py-2 font-semibold text-zinc-600 hover:bg-zinc-50"
-                >
-                  إلغاء
-                </button>
-
-                <button
-                  type="submit"
-                  disabled={isPending}
-                  className="rounded-xl bg-zinc-900 px-4 py-2 font-semibold text-white shadow-xs hover:bg-zinc-800 disabled:opacity-50"
-                >
-                  {isPending ? 'جاري الحفظ...' : editingTable ? 'تحديث الطاولة' : 'إنشاء الطاولة'}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
+      <EditTableModal
+        isOpen={isTableModalOpen}
+        onClose={() => setIsTableModalOpen(false)}
+        editingTable={editingTable}
+        sections={sections}
+        isPending={isPending}
+        tableNumber={tableNumber}
+        setTableNumber={setTableNumber}
+        tableSectionId={tableSectionId}
+        setTableSectionId={setTableSectionId}
+        tableCapacity={tableCapacity}
+        setTableCapacity={setTableCapacity}
+        tableShape={tableShape}
+        setTableShape={setTableShape}
+        tableSortOrder={tableSortOrder}
+        setTableSortOrder={setTableSortOrder}
+        tableStatus={tableStatus}
+        setTableStatus={setTableStatus}
+        onSave={handleSaveTable}
+      />
 
       {/* 6. Modal: Manage Sections */}
-      {isSectionModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-xs animate-in fade-in">
-          <div className="w-full max-w-lg rounded-2xl bg-white p-5 shadow-2xl animate-in zoom-in-95">
-            <div className="flex items-center justify-between border-b border-zinc-100 pb-3">
-              <div className="flex items-center gap-2">
-                <Layers className="size-4 text-zinc-700" strokeWidth={1.8} />
-                <h3 className="text-base font-bold text-zinc-900">أقسام وقاعات الصالة</h3>
-              </div>
-              <button
-                type="button"
-                onClick={() => setIsSectionModalOpen(false)}
-                className="rounded-lg p-1 text-zinc-400 hover:bg-zinc-100 hover:text-zinc-700"
-              >
-                <X className="size-4" />
-              </button>
-            </div>
-
-            {/* Existing Sections List */}
-            <div className="mt-4 space-y-2 max-h-56 overflow-y-auto">
-              <p className="text-[11px] font-semibold text-zinc-500">الأقسام الحالية بهذا الفرع:</p>
-              {sections.length === 0 ? (
-                <p className="text-xs text-zinc-400 py-3 text-center border rounded-xl border-dashed">
-                  لا توجد أقسام معرفة حتى الآن. أضف قسماً أدناه (مثال: الصالة الرئيسية، العائلات).
-                </p>
-              ) : (
-                sections.map((sec) => {
-                  const tableCount = tables.filter((t) => t.sectionId === sec.id).length;
-                  return (
-                    <div
-                      key={sec.id}
-                      className="flex items-center justify-between rounded-xl border border-zinc-200 bg-zinc-50/60 p-2.5 text-xs"
-                    >
-                      <div>
-                        <span className="font-bold text-zinc-900">{sec.nameAr}</span>
-                        <span className="mr-2 font-mono text-[11px] text-zinc-500">
-                          ({sec.nameEn})
-                        </span>
-                        <span className="mr-3 rounded-md bg-zinc-200/70 px-1.5 py-0.5 text-[10px] text-zinc-700">
-                          {tableCount} طاولات
-                        </span>
-                      </div>
-
-                      <div className="flex items-center gap-1">
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setEditingSection(sec);
-                            setSectionNameAr(sec.nameAr);
-                            setSectionNameEn(sec.nameEn);
-                            setSectionSortOrder(sec.sortOrder);
-                          }}
-                          className="grid size-6 place-items-center rounded-md text-zinc-600 hover:bg-zinc-200"
-                          title="تعديل القسم"
-                        >
-                          <Edit2 className="size-3" />
-                        </button>
-
-                        <button
-                          type="button"
-                          onClick={() => handleDeleteSection(sec.id)}
-                          disabled={tableCount > 0}
-                          title={
-                            tableCount > 0
-                              ? 'لا يمكن حذف قسم يحتوي على طاولات'
-                              : 'حذف القسم'
-                          }
-                          className={`grid size-6 place-items-center rounded-md ${
-                            tableCount > 0
-                              ? 'text-zinc-300 cursor-not-allowed'
-                              : 'text-rose-600 hover:bg-rose-50'
-                          }`}
-                        >
-                          <Trash2 className="size-3" />
-                        </button>
-                      </div>
-                    </div>
-                  );
-                })
-              )}
-            </div>
-
-            {/* Add / Edit Section Form */}
-            <form onSubmit={handleSaveSection} className="mt-4 pt-4 border-t border-zinc-100 space-y-3 text-xs">
-              <p className="font-bold text-zinc-800">
-                {editingSection ? `تعديل قسم: ${editingSection.nameAr}` : 'إضافة قسم جديد:'}
-              </p>
-
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block font-semibold text-zinc-700 mb-1">
-                    الاسم بالعربية <span className="text-rose-600">*</span>
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    placeholder="مثال: الصالة الرئيسية"
-                    value={sectionNameAr}
-                    onChange={(e) => setSectionNameAr(e.target.value)}
-                    className="w-full rounded-xl border border-zinc-200 px-3 py-2 text-zinc-900 focus:outline-none focus:ring-2 focus:ring-zinc-900"
-                  />
-                </div>
-
-                <div>
-                  <label className="block font-semibold text-zinc-700 mb-1">
-                    الاسم بالإنجليزية <span className="text-rose-600">*</span>
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    placeholder="e.g. Main Hall"
-                    value={sectionNameEn}
-                    onChange={(e) => setSectionNameEn(e.target.value)}
-                    className="w-full rounded-xl border border-zinc-200 px-3 py-2 text-zinc-900 focus:outline-none focus:ring-2 focus:ring-zinc-900 font-mono text-left"
-                    dir="ltr"
-                  />
-                </div>
-              </div>
-
-              <div className="flex items-center justify-between pt-1">
-                <div className="w-1/3">
-                  <label className="block font-semibold text-zinc-700 mb-1">ترتيب العرض</label>
-                  <input
-                    type="number"
-                    min="0"
-                    value={sectionSortOrder}
-                    onChange={(e) => setSectionSortOrder(parseInt(e.target.value) || 0)}
-                    className="w-full rounded-xl border border-zinc-200 px-3 py-1.5 text-zinc-900 focus:outline-none focus:ring-2 focus:ring-zinc-900"
-                  />
-                </div>
-
-                <div className="flex items-center gap-2 self-end">
-                  {editingSection && (
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setEditingSection(null);
-                        setSectionNameAr('');
-                        setSectionNameEn('');
-                      }}
-                      className="rounded-xl border border-zinc-200 px-3 py-2 font-medium text-zinc-600 hover:bg-zinc-50"
-                    >
-                      إلغاء التعديل
-                    </button>
-                  )}
-
-                  <button
-                    type="submit"
-                    disabled={isPending}
-                    className="rounded-xl bg-zinc-900 px-4 py-2 font-semibold text-white shadow-xs hover:bg-zinc-800 disabled:opacity-50"
-                  >
-                    {isPending ? 'جاري الحفظ...' : editingSection ? 'حفظ التعديل' : 'إضافة القسم'}
-                  </button>
-                </div>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
+      <ManageSectionsModal
+        isOpen={isSectionModalOpen}
+        onClose={() => setIsSectionModalOpen(false)}
+        sections={sections}
+        tables={tables}
+        editingSection={editingSection}
+        setEditingSection={setEditingSection}
+        sectionNameAr={sectionNameAr}
+        setSectionNameAr={setSectionNameAr}
+        sectionNameEn={sectionNameEn}
+        setSectionNameEn={setSectionNameEn}
+        sectionSortOrder={sectionSortOrder}
+        setSectionSortOrder={setSectionSortOrder}
+        isPending={isPending}
+        onSaveSection={handleSaveSection}
+        onDeleteSection={handleDeleteSection}
+      />
 
       {/* 7. Modal: Table QR Code & Standee Card */}
-      {qrModalTable && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-xs animate-in fade-in">
-          <div className="w-full max-w-sm rounded-2xl bg-white p-5 shadow-2xl animate-in zoom-in-95 text-center">
-            <div className="flex items-center justify-between border-b border-zinc-100 pb-3">
-              <h3 className="text-sm font-bold text-zinc-900">
-                بطاقة طاولة رقم {qrModalTable.tableNumber}
-              </h3>
-              <button
-                type="button"
-                onClick={() => setQrModalTable(null)}
-                className="rounded-lg p-1 text-zinc-400 hover:bg-zinc-100 hover:text-zinc-700"
-              >
-                <X className="size-4" />
-              </button>
-            </div>
-
-            {/* Printable Standee Card */}
-            <div id="printable-table-card" className="mt-4 rounded-2xl border-2 border-zinc-900 bg-white p-5 shadow-sm space-y-3">
-              <div className="space-y-0.5">
-                <span className="text-[10px] font-mono tracking-widest text-zinc-500 uppercase">
-                  {restaurantNameAr}
-                </span>
-                <h4 className="text-lg font-black text-zinc-900">
-                  طاولة {qrModalTable.tableNumber}
-                </h4>
-                {qrModalTable.sectionNameAr && (
-                  <p className="text-xs text-zinc-600">{qrModalTable.sectionNameAr}</p>
-                )}
-              </div>
-
-              {/* QR Code Container */}
-              <div className="mx-auto grid size-44 place-items-center rounded-xl border border-zinc-200 bg-zinc-50/50 p-2">
-                {/* Responsive crisp QR image from lightweight public endpoint */}
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src={`https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=${encodeURIComponent(
-                    getTableMenuUrl(qrModalTable)
-                  )}`}
-                  alt={`QR للطاولة ${qrModalTable.tableNumber}`}
-                  className="size-36 rounded-md mix-blend-multiply"
-                />
-              </div>
-
-              <div className="space-y-1">
-                <p className="text-xs font-bold text-zinc-800">امسح الرمز للاطلاع على المنيو والطلب</p>
-                <p className="font-mono text-[10px] text-zinc-400 truncate max-w-xs mx-auto">
-                  {getTableMenuUrl(qrModalTable)}
-                </p>
-              </div>
-            </div>
-
-            {/* QR Actions */}
-            <div className="mt-4 flex items-center justify-center gap-2 text-xs">
-              <button
-                type="button"
-                onClick={() => handleCopyLink(qrModalTable)}
-                className="flex items-center gap-1.5 rounded-xl border border-zinc-200 bg-white px-3.5 py-2 font-semibold text-zinc-700 hover:bg-zinc-50"
-              >
-                {copiedLink ? (
-                  <>
-                    <Check className="size-3.5 text-emerald-600" />
-                    <span>تم النسخ!</span>
-                  </>
-                ) : (
-                  <>
-                    <Copy className="size-3.5" />
-                    <span>نسخ الرابط</span>
-                  </>
-                )}
-              </button>
-
-              <button
-                type="button"
-                onClick={() => window.print()}
-                className="flex items-center gap-1.5 rounded-xl bg-zinc-900 px-4 py-2 font-semibold text-white shadow-xs hover:bg-zinc-800"
-              >
-                <Printer className="size-3.5" />
-                <span>طباعة البطاقة</span>
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <TableQrModal
+        table={qrModalTable}
+        onClose={() => setQrModalTable(null)}
+        restaurantNameAr={restaurantNameAr}
+        getTableMenuUrl={getTableMenuUrl}
+        onCopyLink={handleCopyLink}
+        copiedLink={copiedLink}
+      />
 
       {/* 8. Modal: Delete Confirm Table */}
       {deleteConfirmTable && (
