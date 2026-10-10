@@ -14,6 +14,9 @@ import {
   Plus,
   ChefHat,
   CheckCircle2,
+  Wifi,
+  WifiOff,
+  RefreshCw,
 } from 'lucide-react';
 import { PosReceipt } from '../../../domain/pos/contracts/pos.repository';
 import { Money } from '../../../domain/shared/value-objects/money';
@@ -120,6 +123,11 @@ function PostSaleModal({
               <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-zinc-900 text-white">
                 {receipt.type === OrderType.DINE_IN ? 'صالة' : 'سفري'}
               </span>
+              {receipt.orderNumber.startsWith('OFFLINE-') && (
+                <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-500 text-white animate-pulse">
+                  أوفلاين (محلي)
+                </span>
+              )}
             </div>
             <p className="text-xs text-zinc-600 font-bold mt-0.5">
               الإجمالي:{' '}
@@ -215,6 +223,48 @@ function PosHeader({
       </div>
 
       <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
+        {/* Offline / Online Sync Indicator */}
+        {!state.offlineSync.isOnline ? (
+          <div
+            title="نظام الكاشير يعمل محلياً في وضع عدم الاتصال (أوفلاين). يتم حفظ الفواتير وطباعتها وتجهيزها للمزامنة التلقائية فور عودة الإنترنت."
+            className="flex items-center gap-1.5 rounded-xl border border-rose-200 bg-rose-50 px-2.5 py-1 text-[11px] font-bold text-rose-700 shadow-2xs"
+          >
+            <WifiOff size={13} className="text-rose-600 animate-pulse" />
+            <span className="hidden md:inline">أوفلاين</span>
+            {state.offlineSync.pendingCount > 0 && (
+              <span className="rounded-md bg-rose-200 px-1 py-0.2 text-[10px] text-rose-900">
+                {state.offlineSync.pendingCount}
+              </span>
+            )}
+          </div>
+        ) : state.offlineSync.pendingCount > 0 ? (
+          <button
+            type="button"
+            onClick={() => state.offlineSync.syncNow()}
+            disabled={state.offlineSync.isSyncing}
+            title="توجد فواتير محلية بانتظار المزامنة مع الخادم. انقر للمزامنة الفورية."
+            className="flex items-center gap-1.5 rounded-xl border border-amber-300 bg-amber-50 px-2.5 py-1 text-[11px] font-bold text-amber-800 hover:bg-amber-100 shadow-2xs transition disabled:opacity-50"
+          >
+            <RefreshCw
+              size={13}
+              className={`text-amber-700 ${state.offlineSync.isSyncing ? 'animate-spin' : ''}`}
+            />
+            <span>
+              {state.offlineSync.isSyncing
+                ? 'جاري المزامنة...'
+                : `مزامنة (${state.offlineSync.pendingCount})`}
+            </span>
+          </button>
+        ) : (
+          <div
+            title="الاتصال بالخادم وقاعدة البيانات مستقر ومباشر."
+            className="hidden xl:flex items-center gap-1 text-[11px] font-medium text-emerald-600 bg-emerald-50/70 border border-emerald-100 rounded-xl px-2 py-0.5"
+          >
+            <span className="size-1.5 rounded-full bg-emerald-500 animate-pulse" />
+            <span>متصل</span>
+          </div>
+        )}
+
         {/* Floor Plan / Dining Hall Switch Button */}
         {state.shift && (
           <button
