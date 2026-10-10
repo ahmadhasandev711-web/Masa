@@ -18,7 +18,7 @@ import {
   WifiOff,
   RefreshCw,
 } from 'lucide-react';
-import { PosReceipt } from '../../../domain/pos/contracts/pos.repository';
+import { PosReceipt, PosShift } from '../../../domain/pos/contracts/pos.repository';
 import { Money } from '../../../domain/shared/value-objects/money';
 import { TableStatus } from '../../../domain/tables/enums';
 import { OrderType } from '../../../domain/ordering/enums';
@@ -27,7 +27,12 @@ import { ProductPicker } from './product-picker';
 import { CartLines, CartTypeSelector, CartOptions, CartTotals } from './pos-cart';
 import { PaymentModal } from './payment-modal';
 import { ShiftPanel } from './shift-panel';
-import { PosReceiptPrint, TableBillPrint, TableBillData } from './pos-receipt';
+import {
+  PosReceiptPrint,
+  TableBillPrint,
+  TableBillData,
+  CombinedPosSlipPrint,
+} from './pos-receipt';
 import { KitchenOrderTicketPrint, KitchenTicketData } from '../../../components/printing/kitchen-order-ticket';
 import { TableItemView } from '../../../application/tables/use-cases/list-tables.use-case';
 import { PosFloorPlan } from './pos-floor-plan';
@@ -506,7 +511,7 @@ function PosDialogs({
           locale={state.settings.locale}
           shift={state.shift}
           onClose={() => state.setShowShift(false)}
-          onDone={(value, message) => {
+          onDone={(value: PosShift | null, message: string) => {
             state.setShift(value);
             state.setShowShift(false);
             state.setNotice(message);
@@ -716,6 +721,7 @@ function PosContent({
 type ActivePrintDoc =
   | { type: 'RECEIPT'; receipt: PosReceipt }
   | { type: 'KOT'; ticket: KitchenTicketData }
+  | { type: 'COMBINED'; receipt: PosReceipt; ticket: KitchenTicketData }
   | { type: 'BILL'; bill: TableBillData }
   | null;
 
@@ -817,10 +823,27 @@ export function PosClient(props: PosClientProps) {
   };
 
   const handlePrintBoth = (receipt: PosReceipt) => {
-    setActivePrintDoc({ type: 'RECEIPT', receipt });
-    setTimeout(() => {
-      handlePrintKotFromReceipt(receipt);
-    }, 450);
+    const kotTicket: KitchenTicketData = {
+      orderNumber: receipt.orderNumber,
+      type: receipt.type,
+      tableName: null,
+      sectionName: null,
+      guestCount: null,
+      customerName: receipt.customerName,
+      customerNotes: receipt.customerNotes,
+      kitchenNotes: null,
+      createdAt: receipt.createdAt,
+      branchName: receipt.branchName,
+      cashierName: null,
+      items: receipt.items.map((i) => ({
+        productNameAr: i.productNameAr,
+        productNameEn: i.productNameEn,
+        sizeNameAr: i.sizeNameAr,
+        quantity: i.quantity,
+        modifiers: i.modifiers.map((m) => ({ nameAr: m.nameAr })),
+      })),
+    };
+    setActivePrintDoc({ type: 'COMBINED', receipt, ticket: kotTicket });
   };
 
   // When sale completes, execute auto-print or default receipt print
@@ -896,6 +919,13 @@ export function PosClient(props: PosClientProps) {
       )}
       {activePrintDoc?.type === 'KOT' && (
         <KitchenOrderTicketPrint ticket={activePrintDoc.ticket} restaurantName={state.settings.nameAr} />
+      )}
+      {activePrintDoc?.type === 'COMBINED' && (
+        <CombinedPosSlipPrint
+          receipt={activePrintDoc.receipt}
+          ticket={activePrintDoc.ticket}
+          restaurantName={state.settings.nameAr}
+        />
       )}
     </div>
   );

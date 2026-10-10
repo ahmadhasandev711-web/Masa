@@ -18,12 +18,12 @@ body {
 }
 
 /* -------------------------------------------------------------
-   Thermal Printing Global Shield (80mm Thermal Receipt Rolls)
-   Ensures ONLY clean receipts/tickets print without UI leakage.
+   Thermal Printing Global Shield (72mm Printable on 80mm Rolls)
+   Ensures ONLY clean receipts/tickets print without clipping on edges.
    ------------------------------------------------------------- */
 @media print {
   @page {
-    size: 80mm auto;
+    size: 72mm auto;
     margin: 0 !important;
   }
 
@@ -32,10 +32,11 @@ body {
     padding: 0 !important;
     background: #ffffff !important;
     color: #000000 !important;
-    width: 80mm !important;
-    min-width: 80mm !important;
-    max-width: 80mm !important;
+    width: 72mm !important;
+    min-width: 72mm !important;
+    max-width: 72mm !important;
     overflow: visible !important;
+    box-sizing: border-box !important;
   }
 
   /* 1. Hide entire page tree */
@@ -54,28 +55,34 @@ body {
   #printable-table-bill *,
   #printable-settlement-receipt,
   #printable-settlement-receipt *,
+  #printable-combined-slip,
+  #printable-combined-slip *,
   .printable-document,
   .printable-document * {
     visibility: visible !important;
   }
 
-  /* 3. Dock printable slip at top-left of paper roll */
+  /* 3. Dock printable slip precisely within 72mm printable width */
   #printable-thermal-receipt,
   #printable-kitchen-ticket,
   #printable-pos-receipt,
   #printable-table-bill,
   #printable-settlement-receipt,
+  #printable-combined-slip,
   .printable-document {
     position: absolute !important;
     left: 0 !important;
     top: 0 !important;
-    width: 76mm !important;
-    max-width: 76mm !important;
+    width: 72mm !important;
+    max-width: 72mm !important;
+    box-sizing: border-box !important;
     margin: 0 auto !important;
-    padding: 2mm 3mm !important;
+    padding: 1.5mm 2.5mm !important;
     display: block !important;
     background: #ffffff !important;
     color: #000000 !important;
+    overflow: hidden !important;
+    word-break: break-word !important;
     font-family: monospace, system-ui, sans-serif !important;
   }
 

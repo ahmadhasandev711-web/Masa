@@ -68,7 +68,7 @@ PORT=3000
 TRUSTED_PROXY_HOPS=1
 
 # كلمة المرور الأولية لمدير النظام (تُستخدم فقط عند أول تهيئة)
-INITIAL_ADMIN_PASSWORD="ChooseAStrongPassword123!"
+INITIAL_ADMIN_PASSWORD="ChooseAStrongPassword"
 
 # إعدادات الهوية الافتراضية للمنشأة
 RESTAURANT_NAME_AR="اسم المطعم بالعربية"

@@ -63,7 +63,7 @@ export function KitchenOrderTicketPrint({
   return (
     <section
       id="printable-kitchen-ticket"
-      className="printable-document hidden bg-white text-black print:block print:w-[76mm] print:mx-auto print:p-2 print:font-mono text-xs leading-tight"
+      className="printable-document hidden bg-white text-black print:block print:w-[72mm] print:max-w-[72mm] print:mx-auto print:p-1.5 box-border overflow-hidden print:font-mono text-xs leading-tight"
       dir="rtl"
     >
       {/* Header */}
