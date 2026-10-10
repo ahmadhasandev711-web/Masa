@@ -80,13 +80,13 @@ export class PrismaPosRepository implements PosRepository {
     }, { isolationLevel: Prisma.TransactionIsolationLevel.ReadCommitted });
   }
   public async getCatalog(branchId: string) {
-    const products = await new PrismaPosTransaction(prisma).getProducts(branchId, (await prisma.product.findMany({ where: { isActive: true }, select: { id: true } })).map((product) => product.id));
-    const categories = await prisma.category.findMany({ where: { isActive: true }, select: { id: true, nameAr: true }, orderBy: { sortOrder: 'asc' } });
+    const products = await new PrismaPosTransaction(prisma).getProducts(branchId, (await prisma.product.findMany({ where: { isActive: true, deletedAt: null }, select: { id: true } })).map((product) => product.id));
+    const categories = await prisma.category.findMany({ where: { isActive: true, deletedAt: null }, select: { id: true, nameAr: true }, orderBy: { sortOrder: 'asc' } });
     return categories.map((category) => ({ ...category, products: products.filter((product) => product.categoryId === category.id && product.sizes.length > 0) })).filter((category) => category.products.length > 0);
   }
   public async recentReceipts(scope: PosScope) {
     const [settings, orders] = await Promise.all([this.getSettings(), prisma.order.findMany({
-      where: { source: OrderSource.POS, branchId: scope.branchId, cashierId: scope.cashierId },
+      where: { source: OrderSource.POS, branchId: scope.branchId, cashierId: scope.cashierId, deletedAt: null },
       take: 20, orderBy: { createdAt: 'desc' }, include: posReceiptInclude,
     })]);
     return orders.map((order) => mapPosReceipt(order, settings.currency, settings.locale));

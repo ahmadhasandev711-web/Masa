@@ -32,7 +32,7 @@ export default async function AdminBookingsPage() {
   const [bookings, branches] = await Promise.all([
     new ListEventBookingsUseCase().execute(),
     prisma.branch.findMany({
-      where: { isActive: true },
+      where: { isActive: true, deletedAt: null },
       select: { id: true, nameAr: true },
       orderBy: { code: 'asc' },
     }),

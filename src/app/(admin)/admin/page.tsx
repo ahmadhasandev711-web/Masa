@@ -74,7 +74,7 @@ export default async function AdminDashboardPage() {
     day: 'numeric',
   }).format(now);
 
-  const branchScope = verifiedBranchId ? { branchId: verifiedBranchId } : {};
+  const branchScope = verifiedBranchId ? { branchId: verifiedBranchId, deletedAt: null } : { deletedAt: null };
 
   // 3. Operational Data Queries (Scoped to Active Branch & RBAC)
   const [
@@ -134,7 +134,7 @@ export default async function AdminDashboardPage() {
     // Dining tables for occupancy calculation
     verifiedBranchId
       ? prisma.diningTable.findMany({
-          where: { branchId: verifiedBranchId, isActive: true },
+          where: { branchId: verifiedBranchId, isActive: true, deletedAt: null },
           select: { status: true },
         })
       : [],

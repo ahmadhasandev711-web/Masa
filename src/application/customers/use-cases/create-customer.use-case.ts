@@ -13,8 +13,22 @@ export class CreateCustomerUseCase {
       where: { phone: phone.value },
     });
 
-    if (existing) {
+    if (existing && !existing.deletedAt) {
       throw new ConflictError(`العميل برقم الهاتف '${phone.formatNational()}' مسجل مسبقاً`);
+    }
+
+    if (existing && existing.deletedAt) {
+      return await prisma.customer.update({
+        where: { id: existing.id },
+        data: {
+          deletedAt: null,
+          deletedById: null,
+          fullName: validated.fullName,
+          email: validated.email || null,
+          notes: validated.notes || null,
+          isActive: true,
+        },
+      });
     }
 
     const domainCustomer = Customer.create({

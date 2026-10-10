@@ -7,6 +7,7 @@ import { PermissionCode } from '../../../../domain/staff/enums/permission.enum';
 import { PrismaFinanceRepository } from '../../../../infrastructure/finance/prisma-finance.repository';
 import { FinanceClient } from './finance-client';
 import { FinancePageData } from './finance.types';
+import { AppLogger } from '../../../../infrastructure/logging/logger';
 
 export const dynamic = 'force-dynamic';
 
@@ -27,6 +28,7 @@ export default async function AdminFinancePage() {
   const allowedBranches = await prisma.branch.findMany({
     where: {
       isActive: true,
+      deletedAt: null,
       ...(session.isSuperAdmin ? {} : { id: { in: session.assignedBranchIds } }),
     },
     select: { id: true, nameAr: true },
@@ -49,7 +51,11 @@ export default async function AdminFinancePage() {
     } else {
       verifiedBranchId = allowedBranches[0].id;
     }
-  } catch {
+  } catch (error) {
+    AppLogger.warn('Finance page branch access fallback triggered', {
+      error: error instanceof Error ? error.message : String(error),
+      userId: session.userId,
+    });
     verifiedBranchId = allowedBranches[0].id;
   }
 

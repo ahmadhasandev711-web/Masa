@@ -21,7 +21,9 @@ export class ListOrdersUseCase {
       limit,
     } = validated;
 
-    const where: Prisma.OrderWhereInput = {};
+    const where: Prisma.OrderWhereInput = {
+      deletedAt: null,
+    };
 
     // Source Filter: Default to ONLINE when not specified (e.g. online delivery cockpit)
     // Pass source: 'ALL' to retrieve orders from all sources (e.g. invoices audit)

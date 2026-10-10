@@ -5,6 +5,7 @@ import { PermissionCode } from '../../../../domain/staff/enums/permission.enum';
 import { assertPagePermission } from '../../../../infrastructure/auth/page-guard';
 import { ListTablesUseCase } from '../../../../application/tables/use-cases/list-tables.use-case';
 import { TablesClient } from './tables-client';
+import { AppLogger } from '../../../../infrastructure/logging/logger';
 
 export const dynamic = 'force-dynamic';
 
@@ -18,6 +19,7 @@ export default async function AdminTablesPage() {
   const allowedBranches = await prisma.branch.findMany({
     where: {
       isActive: true,
+      deletedAt: null,
       ...(session.isSuperAdmin ? {} : { id: { in: session.assignedBranchIds } }),
     },
     select: { id: true, nameAr: true, code: true },
@@ -38,7 +40,11 @@ export default async function AdminTablesPage() {
       session,
       activeBranchIdFromCookie
     );
-  } catch {
+  } catch (error) {
+    AppLogger.warn('Tables page branch access fallback triggered', {
+      error: error instanceof Error ? error.message : String(error),
+      userId: session.userId,
+    });
     verifiedBranchId = allowedBranches[0].id;
   }
 

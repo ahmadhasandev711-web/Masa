@@ -49,6 +49,7 @@ export const branchAvailabilitySchema = z.object({
 
 export const deleteCatalogItemSchema = z.object({
   id: z.string().trim().min(1, 'المعرف مطلوب'),
+  deletedById: z.string().optional(),
 });
 
 export type CategoryInput = z.infer<typeof categorySchema>;

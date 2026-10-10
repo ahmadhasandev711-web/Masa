@@ -238,7 +238,8 @@ export function KitchenKdsClient({
       } else {
         alert(res.error || 'فشل تحديث حالة الطلب');
       }
-    } catch {
+    } catch (err) {
+      console.error('Kitchen KDS bump error:', err);
       alert('حدث خطأ أثناء إنهاء وتجهيز الطلب');
     } finally {
       setBumpingOrderId(null);
@@ -281,7 +282,8 @@ export function KitchenKdsClient({
       } else {
         alert(res.error || 'فشل تحديث حالة الصنف');
       }
-    } catch {
+    } catch (err) {
+      console.error('Kitchen KDS item toggle error:', err);
       alert('حدث خطأ أثناء تحديث حالة الصنف');
     } finally {
       setTogglingItemId(null);

@@ -37,6 +37,10 @@ model Branch {
   phone     String
   address   String
   isActive  Boolean  @default(true) @map("is_active")
+  deletedAt DateTime? @map("deleted_at")
+  deletedById String? @map("deleted_by_id")
+  createdById String? @map("created_by_id")
+  updatedById String? @map("updated_by_id")
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt      @map("updated_at")
 
@@ -45,6 +49,7 @@ model Branch {
   cashShifts   CashShift[]
   productAvailability BranchProductAvailability[]
   orders Order[]
+  returnInvoices ReturnInvoice[]
   branchInventories BranchInventory[]
   inventoryMovements InventoryMovement[]
   purchaseOrders PurchaseOrder[]
@@ -56,6 +61,7 @@ model Branch {
   eventBookings EventBooking[]
 
   @@index([isActive])
+  @@index([deletedAt])
   @@map("branches")
 }
 
@@ -90,6 +96,10 @@ model DiningTable {
   shape         String    @default("SQUARE") // SQUARE | ROUND | RECTANGLE
   sortOrder     Int       @default(0) @map("sort_order")
   isActive      Boolean   @default(true) @map("is_active")
+  deletedAt     DateTime? @map("deleted_at")
+  deletedById   String?   @map("deleted_by_id")
+  createdById   String?   @map("created_by_id")
+  updatedById   String?   @map("updated_by_id")
   createdAt     DateTime  @default(now()) @map("created_at")
   updatedAt     DateTime  @updatedAt      @map("updated_at")
 
@@ -100,6 +110,7 @@ model DiningTable {
   @@unique([branchId, tableNumber])
   @@index([branchId, status])
   @@index([branchId, sectionId])
+  @@index([deletedAt])
   @@map("dining_tables")
 }
 
@@ -184,11 +195,16 @@ model Category {
   description String?  @db.Text
   sortOrder   Int      @default(0) @map("sort_order")
   isActive    Boolean  @default(true) @map("is_active")
+  deletedAt   DateTime? @map("deleted_at")
+  deletedById String?   @map("deleted_by_id")
+  createdById String?   @map("created_by_id")
+  updatedById String?   @map("updated_by_id")
   createdAt   DateTime @default(now()) @map("created_at")
   updatedAt   DateTime @updatedAt @map("updated_at")
   products    Product[]
 
   @@index([isActive, sortOrder])
+  @@index([deletedAt])
   @@map("categories")
 }
 
@@ -202,6 +218,10 @@ model Product {
   sortOrder   Int      @default(0) @map("sort_order")
   isActive    Boolean  @default(true) @map("is_active")
   isFeatured  Boolean  @default(false) @map("is_featured")
+  deletedAt   DateTime? @map("deleted_at")
+  deletedById String?   @map("deleted_by_id")
+  createdById String?   @map("created_by_id")
+  updatedById String?   @map("updated_by_id")
   createdAt   DateTime @default(now()) @map("created_at")
   updatedAt   DateTime @updatedAt @map("updated_at")
   category    Category @relation(fields: [categoryId], references: [id], onDelete: Restrict)
@@ -213,6 +233,7 @@ model Product {
 
   @@index([categoryId, isActive, sortOrder])
   @@index([isFeatured, isActive, sortOrder])
+  @@index([deletedAt])
   @@map("products")
 }
 
@@ -356,6 +377,7 @@ model User {
   inventoryMovements InventoryMovement[]
   purchaseOrders     PurchaseOrder[]
   driverSettlementsReceived DriverSettlement[]  @relation("DriverSettlementsCashier")
+  returnInvoicesCreated ReturnInvoice[] @relation("ReturnInvoicesCreated")
 
   @@index([roleId])
   @@index([isActive])
@@ -388,6 +410,10 @@ model Customer {
   totalSpent  Int       @default(0) @map("total_spent_minor")
   lastOrderAt DateTime? @map("last_order_at")
   isActive    Boolean   @default(true) @map("is_active")
+  deletedAt   DateTime? @map("deleted_at")
+  deletedById String?   @map("deleted_by_id")
+  createdById String?   @map("created_by_id")
+  updatedById String?   @map("updated_by_id")
   createdAt   DateTime  @default(now()) @map("created_at")
   updatedAt   DateTime  @updatedAt @map("updated_at")
 
@@ -397,6 +423,7 @@ model Customer {
 
   @@index([fullName])
   @@index([createdAt])
+  @@index([deletedAt])
   @@map("customers")
 }
 
@@ -470,6 +497,10 @@ model Order {
   kitchenCompletedAt DateTime? @map("kitchen_completed_at")
   kitchenNotes       String?   @map("kitchen_notes") @db.Text
 
+  deletedAt        DateTime?   @map("deleted_at")
+  deletedById      String?     @map("deleted_by_id")
+  createdById      String?     @map("created_by_id")
+  updatedById      String?     @map("updated_by_id")
   createdAt        DateTime    @default(now()) @map("created_at")
   updatedAt        DateTime    @updatedAt @map("updated_at")
 
@@ -482,6 +513,7 @@ model Order {
   driverSettlement DriverSettlement? @relation(fields: [driverSettlementId], references: [id], onDelete: SetNull)
   items            OrderItem[]
   payments         OrderPayment[]
+  returnInvoices   ReturnInvoice[]
 
   @@index([orderNumber])
   @@index([branchId, status])
@@ -495,7 +527,31 @@ model Order {
   @@index([driverId, status])
   @@index([driverSettlementId])
   @@index([createdAt])
+  @@index([deletedAt])
   @@map("orders")
+}
+
+// -------------------------------------------------------------
+// 5.1 Return Invoices & Refund Audit (Phase C / Rule 4.5)
+// -------------------------------------------------------------
+model ReturnInvoice {
+  id              String   @id @default(uuid())
+  returnNumber    String   @unique @map("return_number")
+  orderId         String   @map("order_id")
+  orderNumber     String   @map("order_number")
+  branchId        String?  @map("branch_id")
+  amountMinor     Int      @map("amount_minor")
+  reason          String   @db.Text
+  createdById     String?  @map("created_by_id")
+  createdAt       DateTime @default(now()) @map("created_at")
+
+  order           Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  branch          Branch?  @relation(fields: [branchId], references: [id], onDelete: Restrict)
+  createdBy       User?    @relation("ReturnInvoicesCreated", fields: [createdById], references: [id], onDelete: SetNull)
+
+  @@index([orderId])
+  @@index([branchId, createdAt])
+  @@map("return_invoices")
 }
 
 // Cashier shift session with cash movements, variance calculation, and managerial audit.

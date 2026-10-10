@@ -34,8 +34,8 @@ export default async function AdminOrdersPage() {
   const userBranchId = session.assignedBranchIds[0] ?? null;
 
   const branchFilter = canManageAllBranches
-    ? { isActive: true }
-    : { id: { in: session.assignedBranchIds }, isActive: true };
+    ? { isActive: true, deletedAt: null }
+    : { id: { in: session.assignedBranchIds }, isActive: true, deletedAt: null };
 
   const now = new Date();
   const todayStr = now.toISOString().slice(0, 10);

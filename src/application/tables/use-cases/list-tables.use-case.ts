@@ -47,7 +47,7 @@ export class ListTablesUseCase {
         orderBy: { sortOrder: 'asc' },
       }),
       prisma.diningTable.findMany({
-        where: { branchId, isActive: true },
+        where: { branchId, isActive: true, deletedAt: null },
         include: {
           section: true,
         },

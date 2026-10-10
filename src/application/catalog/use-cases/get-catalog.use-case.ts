@@ -3,8 +3,12 @@ import { prisma } from '../../../infrastructure/db/prisma';
 export class GetCatalogUseCase {
   public async execute() {
     const [categories, products, modifierGroups, branches, settings] = await Promise.all([
-      prisma.category.findMany({ orderBy: [{ sortOrder: 'asc' }, { nameAr: 'asc' }] }),
+      prisma.category.findMany({
+        where: { deletedAt: null },
+        orderBy: [{ sortOrder: 'asc' }, { nameAr: 'asc' }],
+      }),
       prisma.product.findMany({
+        where: { deletedAt: null },
         orderBy: [{ sortOrder: 'asc' }, { createdAt: 'desc' }],
         include: {
           category: { select: { id: true, nameAr: true } },
@@ -19,7 +23,7 @@ export class GetCatalogUseCase {
         include: { modifiers: { where: { isActive: true }, orderBy: { sortOrder: 'asc' } } },
       }),
       prisma.branch.findMany({
-        where: { isActive: true },
+        where: { isActive: true, deletedAt: null },
         select: { id: true, code: true, nameAr: true },
         orderBy: { nameAr: 'asc' },
       }),

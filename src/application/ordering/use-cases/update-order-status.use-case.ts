@@ -75,6 +75,17 @@ export class UpdateOrderStatusUseCase {
       updateData.paymentStatus = PaymentStatus.PAID;
     }
 
+    // Rule 4.5: If a paid order is cancelled or rejected, mark REFUNDED and generate ReturnInvoice
+    const shouldRefundAndGenerateInvoice =
+      (targetStatus === OrderStatus.CANCELLED || targetStatus === OrderStatus.REJECTED) &&
+      currentStatus !== OrderStatus.CANCELLED &&
+      currentStatus !== OrderStatus.REJECTED &&
+      order.paymentStatus === PaymentStatus.PAID;
+
+    if (shouldRefundAndGenerateInvoice) {
+      updateData.paymentStatus = PaymentStatus.REFUNDED;
+    }
+
     const updated = await prisma.order.update({
       where: { id: order.id },
       data: updateData,
@@ -89,6 +100,21 @@ export class UpdateOrderStatusUseCase {
         },
       },
     });
+
+    if (shouldRefundAndGenerateInvoice) {
+      const returnNumber = `RET-${order.orderNumber}-${Math.floor(1000 + Math.random() * 9000)}`;
+      await prisma.returnInvoice.create({
+        data: {
+          returnNumber,
+          orderId: order.id,
+          orderNumber: order.orderNumber,
+          branchId: order.branchId,
+          amountMinor: order.totalMinor,
+          reason: validated.cancelReason?.trim() || 'إلغاء طلب مدفوع',
+          createdById: validated.userId || null,
+        },
+      });
+    }
 
     // Deduct BOM Recipe inventory for online order (Idempotent: runs once per order)
     if (

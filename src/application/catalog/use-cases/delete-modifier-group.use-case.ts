@@ -13,8 +13,10 @@ export class DeleteModifierGroupUseCase {
         modifiers: {
           select: { id: true },
         },
-        _count: {
-          select: { products: true },
+        products: {
+          where: {
+            product: { deletedAt: null },
+          },
         },
       },
     });
@@ -23,7 +25,7 @@ export class DeleteModifierGroupUseCase {
       throw new NotFoundError('مجموعة الإضافات', groupId);
     }
 
-    if (group._count.products > 0) {
+    if (group.products.length > 0) {
       throw new ValidationError(
         'لا يمكن حذف هذه المجموعة لارتباطها بأصناف في المنيو. يرجى فك ارتباطها من الأصناف أولاً أو أرشفتها.'
       );

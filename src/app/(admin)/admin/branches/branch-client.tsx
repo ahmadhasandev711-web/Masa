@@ -169,7 +169,8 @@ export function BranchClient({ initialBranches }: { initialBranches: BranchItem[
         );
         alert(res.error || 'تعذر تعديل حالة الفرع');
       }
-    } catch {
+    } catch (error) {
+      console.error('Failed to toggle branch status:', error);
       // Revert on error
       setBranches((prev) =>
         prev.map((b) => (b.id === branchId ? { ...b, isActive: currentStatus } : b))

@@ -59,7 +59,8 @@ export function BranchSwitcher({
       if (!res.success) {
         setSelectedId(activeBranchId);
       }
-    } catch {
+    } catch (error) {
+      console.error('Failed to switch active branch:', error);
       setSelectedId(activeBranchId);
     } finally {
       setIsPending(false);

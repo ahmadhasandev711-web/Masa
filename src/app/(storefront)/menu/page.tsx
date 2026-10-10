@@ -5,12 +5,12 @@ export default async function StorefrontMenuPage() {
   const [setting, categories, products] = await Promise.all([
     prisma.restaurantSetting.findFirst(),
     prisma.category.findMany({
-      where: { isActive: true },
+      where: { isActive: true, deletedAt: null },
       select: { id: true, nameAr: true, nameEn: true },
       orderBy: { sortOrder: 'asc' },
     }),
     prisma.product.findMany({
-      where: { isActive: true },
+      where: { isActive: true, deletedAt: null },
       include: {
         sizes: {
           where: { isActive: true },

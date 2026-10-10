@@ -7,6 +7,7 @@ import { RbacGuard } from '../../../infrastructure/auth/rbac-guard';
 import { PermissionCode } from '../../../domain/staff/enums/permission.enum';
 import { redirect } from 'next/navigation';
 import { logoutAction } from '../../actions/auth.actions';
+import { AppLogger } from '../../../infrastructure/logging/logger';
 
 export default async function AdminLayout({
   children,
@@ -23,8 +24,8 @@ export default async function AdminLayout({
   // If user is super admin or has MANAGE_BRANCHES, they can switch between all active branches.
   // Otherwise, strictly filter branches to only the branches assigned to them.
   const branchFilter = canSwitchBranches
-    ? { isActive: true }
-    : { id: { in: session.assignedBranchIds }, isActive: true };
+    ? { isActive: true, deletedAt: null }
+    : { id: { in: session.assignedBranchIds }, isActive: true, deletedAt: null };
 
   const [settings, branches, cookieStore, userProfile] = await Promise.all([
     prisma.restaurantSetting.findFirst(),
@@ -59,11 +60,14 @@ export default async function AdminLayout({
       pendingOrdersCount = await prisma.order.count({
         where: {
           status: 'PENDING',
+          deletedAt: null,
           ...(activeBranchId ? { branchId: activeBranchId } : {}),
         },
       });
-    } catch {
-      // safe fallback
+    } catch (err) {
+      AppLogger.warn('Failed to count pending orders for admin badge', {
+        error: err instanceof Error ? err.message : String(err),
+      });
     }
   }
 
@@ -75,8 +79,10 @@ export default async function AdminLayout({
         ...(activeBranchId ? { branchId: activeBranchId } : {}),
       },
     });
-  } catch {
-    // safe fallback
+  } catch (err) {
+    AppLogger.warn('Failed to count pending bookings for admin badge', {
+      error: err instanceof Error ? err.message : String(err),
+    });
   }
 
   const rawSections: Array<{

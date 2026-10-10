@@ -6,7 +6,9 @@ export class ListCustomersUseCase {
     const validated = listCustomersQuerySchema.parse(query);
     const skip = (validated.page - 1) * validated.limit;
 
-    const where: Record<string, unknown> = {};
+    const where: Record<string, unknown> = {
+      deletedAt: null,
+    };
 
     if (validated.term && validated.term.trim().length > 0) {
       const term = validated.term.trim();

@@ -293,7 +293,8 @@ export function StaffClient({
         );
         alert(res.error || 'تعذر تغيير حالة الحساب');
       }
-    } catch {
+    } catch (error) {
+      console.error('Failed to toggle staff active status:', error);
       // Revert on failure
       setStaffList((prev) =>
         prev.map((u) => (u.id === user.id ? { ...u, isActive: user.isActive } : u))

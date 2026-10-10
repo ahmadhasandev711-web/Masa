@@ -4,6 +4,7 @@ import { PhoneNumber } from '../../../domain/customers/value-objects/phone-numbe
 import { NotFoundError } from '../../../domain/shared/errors/domain-error';
 import { BookingStatus } from '../../../domain/bookings/enums/booking-status.enum';
 import { MatchOrCreateCustomerUseCase } from '../../customers/use-cases/match-or-create-customer.use-case';
+import { AppLogger } from '../../../infrastructure/logging/logger';
 
 export class CreateEventBookingUseCase {
   async execute(rawInput: CreateEventBookingInput): Promise<{
@@ -42,8 +43,10 @@ export class CreateEventBookingUseCase {
         phone: input.customerPhone,
       });
       customerId = matchedCustomer.customer.id;
-    } catch {
-      // safe fallback
+    } catch (error) {
+      AppLogger.warn('Failed to match or create CRM customer for event booking', {
+        error: error instanceof Error ? error.message : String(error),
+      });
     }
 
     const booking = await prisma.eventBooking.create({

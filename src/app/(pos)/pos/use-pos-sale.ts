@@ -102,8 +102,8 @@ export function usePosSale(
             onQueueUpdate?.();
             onSuccess(offlineReceipt);
             return;
-          } catch {
-            // If offline creation also fails, set uncertain
+          } catch (offlineErr) {
+            console.error('POS offline queuing failed:', offlineErr);
           }
         }
         setUncertain(true);

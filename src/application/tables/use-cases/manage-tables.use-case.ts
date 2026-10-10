@@ -88,7 +88,10 @@ export class ManageTablesUseCase {
 
     return prisma.diningTable.update({
       where: { id },
-      data: { isActive: false },
+      data: {
+        isActive: false,
+        deletedAt: new Date(),
+      },
     });
   }
 }

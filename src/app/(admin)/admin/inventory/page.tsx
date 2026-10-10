@@ -13,6 +13,7 @@ import { ListPurchaseOrdersUseCase } from '../../../../application/inventory/use
 import { ListInventoryMovementsUseCase } from '../../../../application/inventory/use-cases/list-inventory-movements.use-case';
 import { RecipeItemDto } from '../../../../domain/inventory/contracts/inventory.repository';
 import { UnitOfMeasure } from '../../../../domain/inventory/enums';
+import { AppLogger } from '../../../../infrastructure/logging/logger';
 
 export const dynamic = 'force-dynamic';
 
@@ -33,6 +34,7 @@ export default async function AdminInventoryPage() {
   const allowedBranches = await prisma.branch.findMany({
     where: {
       isActive: true,
+      deletedAt: null,
       ...(session.isSuperAdmin ? {} : { id: { in: session.assignedBranchIds } }),
     },
     select: { id: true, nameAr: true },
@@ -50,7 +52,11 @@ export default async function AdminInventoryPage() {
   let verifiedBranchId: string;
   try {
     verifiedBranchId = await BranchContextService.assertBranchAccess(session, activeBranchIdFromCookie);
-  } catch {
+  } catch (error) {
+    AppLogger.warn('Inventory page branch access fallback triggered', {
+      error: error instanceof Error ? error.message : String(error),
+      userId: session.userId,
+    });
     verifiedBranchId = await BranchContextService.assertBranchAccess(session, null);
   }
 

@@ -48,7 +48,8 @@ export function ProductImagePicker({
         return;
       }
       setImageUrl(res.data.url);
-    } catch {
+    } catch (err) {
+      console.error('Failed to upload product image:', err);
       setUploadError('حدث خطأ أثناء رفع الصورة، يرجى المحاولة ثانية');
     } finally {
       setUploading(false);

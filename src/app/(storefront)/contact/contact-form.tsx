@@ -51,7 +51,8 @@ export function ContactForm({ branches }: { branches: BranchOption[] }) {
       if (res.data.whatsappUrl) {
         window.open(res.data.whatsappUrl, '_blank');
       }
-    } catch {
+    } catch (err) {
+      console.error('Contact form submission error:', err);
       setError(isAr ? 'حدث خطأ غير متوقع، يرجى المحاولة ثانية' : 'Unexpected error occurred. Please try again.');
     } finally {
       setLoading(false);

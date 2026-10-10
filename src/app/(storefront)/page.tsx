@@ -5,7 +5,7 @@ export default async function StorefrontHomePage() {
   const [setting, products, branches] = await Promise.all([
     prisma.restaurantSetting.findFirst(),
     prisma.product.findMany({
-      where: { isActive: true },
+      where: { isActive: true, deletedAt: null },
       include: {
         sizes: { where: { isActive: true }, orderBy: { sortOrder: 'asc' } },
         category: { select: { nameAr: true, nameEn: true } },
@@ -13,7 +13,7 @@ export default async function StorefrontHomePage() {
       orderBy: { sortOrder: 'asc' },
     }),
     prisma.branch.findMany({
-      where: { isActive: true },
+      where: { isActive: true, deletedAt: null },
       select: { id: true, code: true, nameAr: true, nameEn: true, phone: true, address: true },
       orderBy: { createdAt: 'asc' },
     }),

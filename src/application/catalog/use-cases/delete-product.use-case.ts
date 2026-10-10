@@ -16,7 +16,7 @@ export class DeleteProductUseCase {
       },
     });
 
-    if (!product) {
+    if (!product || product.deletedAt) {
       throw new NotFoundError('الصنف', productId);
     }
 
@@ -26,35 +26,22 @@ export class DeleteProductUseCase {
       );
     }
 
+    // Rule 4.1: Soft delete product, mark deletedAt, and remove active branch availability
     return prisma.$transaction(async (tx) => {
-      // 1. Delete Recipe items linked to this product or its sizes
-      await tx.recipeItem.deleteMany({
-        where: {
-          OR: [
-            { productId },
-            { productSize: { productId } },
-          ],
-        },
+      await tx.productModifierGroup.deleteMany({
+        where: { productId },
       });
-
-      // 2. Delete branch availability
       await tx.branchProductAvailability.deleteMany({
         where: { productId },
       });
 
-      // 3. Delete modifier group associations
-      await tx.productModifierGroup.deleteMany({
-        where: { productId },
-      });
-
-      // 4. Delete product sizes
-      await tx.productSize.deleteMany({
-        where: { productId },
-      });
-
-      // 5. Delete the product itself
-      return tx.product.delete({
+      return tx.product.update({
         where: { id: productId },
+        data: {
+          isActive: false,
+          deletedAt: new Date(),
+          deletedById: value.deletedById ?? null,
+        },
       });
     });
   }
